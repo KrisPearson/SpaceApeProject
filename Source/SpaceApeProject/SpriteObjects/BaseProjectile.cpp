@@ -3,9 +3,13 @@
 #include "BaseProjectile.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+//#include "Components/BaseProjectileComponent.h"
+#include "Net/UnrealNetwork.h"
 
 #include "Engine.h"
 
+
+//TODO: Consider whether enemies need their own projectile class - could both inherrit from same base
 
 // Sets default values
 ABaseProjectile::ABaseProjectile()
@@ -22,8 +26,8 @@ ABaseProjectile::ABaseProjectile()
 	ProjectileMesh->SetVisibility(true);
 	ProjectileMesh->SetEnableGravity(false);
 	//ProjectileMesh->SetStaticMesh(ProjectileMeshAsset.Object);
-	//ProjectileMesh->BodyInstance.SetCollisionProfileName("Projectile");
-	//ProjectileMesh->OnComponentHit.AddDynamic(this, &ASpaceApeProjectile::OnHit);
+	ProjectileMesh->BodyInstance.SetCollisionProfileName("PlayerProjectile"); //TODO: Consider how best to change colission type (two different child classes?)
+	ProjectileMesh->OnComponentHit.AddDynamic(this, &ABaseProjectile::OnHit);
 	RootComponent = ProjectileMesh;
 
 	// Movement Component
@@ -63,3 +67,47 @@ void ABaseProjectile::Tick(float DeltaTime)
 
 }
 
+void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
+	UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile::OnHit"));
+	if (Role == ROLE_Authority) {
+		//if (WeaponData != nullptr) BroadcastHit(OtherActor, (*WeaponData)->BaseWeaponDamage);
+		BroadcastHit(OtherActor, 10 /*Damage*/);
+
+		//for (UBaseProjectileComponent* Component : ProjectileComponents) {
+		//	Component->ExecuteHitEvent();
+		//}
+	}
+
+	//if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
+	//if (HitEffectParticle != nullptr) { HitEffectParticle->ActivateSystem(true); }
+
+	//ToggleEnabled(false);
+
+	/*
+
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL)) {
+	if (OtherActor->IsA(AEnemy::StaticClass())) {
+	Cast<AEnemy>(OtherActor)->ReceiveDamage(ProjectileDamage);
+	UE_LOG(LogTemp, Log, TEXT("HIT ENEMY"));
+	}
+	else {
+	UE_LOG(LogTemp, Log, TEXT("Hit Something else"));
+	}
+	}
+	*/
+	// Only add impulse and destroy projectile if we hit a physics
+	/*
+	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
+	{
+	OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+	}
+	*/
+
+
+	//if (OwningPool != NULL) {
+		//SetProjectileLocationAndDirection(FVector(0, 0, 0), FVector(0, 0, 0), false); // this doesn't appear to be working
+		//OwningPool->ReturnReusableReference(this);
+		//if (World != nullptr) World->GetTimerManager().ClearTimer(ReturnToPoolTimer);
+		//if (World != nullptr) World->GetTimerManager().SetTimer(ReturnToPoolTimer, this, &ASpaceApeProjectile::ResetProjectile, 4.f);
+	//}
+}

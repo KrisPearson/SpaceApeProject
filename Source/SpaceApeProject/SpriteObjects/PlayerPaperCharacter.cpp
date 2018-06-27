@@ -11,10 +11,13 @@
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
 #include "SpriteObjects/BaseProjectile.h"
+#include "Components/SpriteShadowComponent.h"
 
 #include "Engine/World.h"
 
 #include "DrawDebugHelpers.h"
+
+#include "SpriteObjects/EnemyPaperCharacter.h"
 
 
 FString GetEnumText(ENetRole Role) {
@@ -44,6 +47,8 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 	// Rotate the Sprite to face the negative X direction and tilt up to face the camera
 	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, -30.f));
 
+	GetCapsuleComponent()->SetCollisionProfileName("Player");
+
 	// Create a camera boom attached to the root (capsule) 
 		//TODO: Replace camera component with a Level Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -66,12 +71,7 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 	ObliqueViewCameraComponent->bAutoActivate = true;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
-	//Create a shadow decal component beneath the character
-	ShadowDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("ShadowDecal"));
-	ShadowDecal->SetupAttachment(RootComponent);
-	ShadowDecal->RelativeRotation = FRotator(90.0f, 0.0f, 0.0f);
-	ShadowDecal->RelativeLocation = FVector(0.0f, 0.0f, -80.f);
-	ShadowDecal->DecalSize = FVector(30.f, 50.f, 30.f);
+	ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
 
 	// Enable replication on the Sprite component so animations show up when networked
 	GetSprite()->SetIsReplicated(true);
@@ -83,9 +83,8 @@ void APlayerPaperCharacter::SetupPlayerInputComponent(UInputComponent * InputCom
 	Super::SetupPlayerInputComponent(InputComponent);
 	InputComponent->BindAxis(MoveUpBinding, this, &APlayerPaperCharacter::MoveUp);
 	InputComponent->BindAxis(MoveRightBinding, this, &APlayerPaperCharacter::MoveRight);
-	InputComponent->BindAxis(FireUpBinding);
-	InputComponent->BindAxis(FireRightBinding);
-
+	InputComponent->BindAxis(FireUpBinding, this, &APlayerPaperCharacter::ShootUp);
+	InputComponent->BindAxis(FireRightBinding, this , &APlayerPaperCharacter::ShootRight);
 }
 
 void APlayerPaperCharacter::BeginPlay() {
@@ -150,6 +149,8 @@ void APlayerPaperCharacter::UpdateAnimation() {
 
 #pragma region Animation Conditions
 	if (bIsShooting) { // Shooting Animation
+		UE_LOG(LogTemp, Warning, TEXT("bIsShooting = true"));
+
 		//UE_LOG(LogTemp, Warning, TEXT("bIsShooting "));
 		switch (CurrentShootingDirection/*GetSHootingDirection()*/ ) {
 		case EFaceDirection::FD_Left:
@@ -250,26 +251,26 @@ void APlayerPaperCharacter::MoveRight(float Value) {
 	AddMovementInput(FVector(0.0f, 1.0f, 0.0f), Value);
 }
 
-//void APlayerPaperCharacter::ShootUp(float Value) {
-//	if (Value > 0) {
-//		CurrentShootingDirection = EFaceDirection::FD_Up;
-//	}
-//	else if (Value < 0) {
-//		CurrentShootingDirection = EFaceDirection::FD_Down;
-//	}
-//	CurrentVerticalShootValue = Value;
-//}
-//
-//void APlayerPaperCharacter::ShootRight(float Value) {
-//	if (Value > 0) {
-//		CurrentShootingDirection = EFaceDirection::FD_Right;
-//	}
-//	else if (Value < 0) {
-//		CurrentShootingDirection = EFaceDirection::FD_Left;
-//	}
-//
-//	CurrentHorizontalShootValue = Value;
-//}
+void APlayerPaperCharacter::ShootUp(float Value) {
+	if (Value > 0) {
+		CurrentShootingDirection = EFaceDirection::FD_Up;
+	}
+	else if (Value < 0) {
+		CurrentShootingDirection = EFaceDirection::FD_Down;
+	}
+	CurrentVerticalShootValue = Value;
+}
+
+void APlayerPaperCharacter::ShootRight(float Value) {
+	if (Value > 0) {
+		CurrentShootingDirection = EFaceDirection::FD_Right;
+	}
+	else if (Value < 0) {
+		CurrentShootingDirection = EFaceDirection::FD_Left;
+	}
+
+	CurrentHorizontalShootValue = Value;
+}
 
 
 void APlayerPaperCharacter::ShootToHeading(Heading HeadingDirection) {
@@ -302,7 +303,8 @@ void APlayerPaperCharacter::ShootToHeading(Heading HeadingDirection) {
 
 			// spawn the projectile
 			ABaseProjectile* NewProjectile = World->SpawnActor<ABaseProjectile>(GetActorTransform().GetLocation(), FireRotation);
-			//NewProjectile->OnEnemyHit.AddDynamic(this, &ASpaceApePlayerCharacter::DealDamage);
+			
+			NewProjectile->OnEnemyHit.AddDynamic(this, &APlayerPaperCharacter::DealDamage);
 
 			//EquippedWeaponComponent->Shoot(_FireDirection);
 
@@ -317,4 +319,36 @@ void APlayerPaperCharacter::ShootToHeading(Heading HeadingDirection) {
 
 void APlayerPaperCharacter::ShotTimerExpired() {
 	bCanFire = true;
+}
+
+void APlayerPaperCharacter::DealDamage(AActor* _Enemy, int _Amount) {
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
+	if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(_Enemy)) {
+		bool isEnemyDead;
+
+		int scoreFromDamage;
+
+		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
+		Enemy->ReceiveDamage(_Amount, isEnemyDead, scoreFromDamage);
+
+		if (isEnemyDead) {
+			//scoreFromDamage += Enemy->GetScoreValue();
+		}
+
+		//CurrentScore += scoreFromDamage;
+
+
+
+		// Inform the enemy of damage and check whether the enemy died as a result.
+		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
+		//	CurrentScore += ScoreValue;
+		//}
+		//else CurrentScore += scoreFromDamage;
+	}
+
+	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
+
+														//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
+
+
 }

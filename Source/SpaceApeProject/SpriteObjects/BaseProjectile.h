@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "BaseProjectile.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHit, AActor*, _Enemy, int, _Amount);
+
 UCLASS()
 class SPACEAPEPROJECT_API ABaseProjectile : public AActor
 {
@@ -35,12 +37,43 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"), Replicated)
 		class UParticleSystemComponent* ProjectileParticle;
 
+
+	/** Function to handle the projectile hitting something */
+	UFUNCTION()
+		virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+
+#pragma region ProjectileBaseClass
+	//virtual void ExecuteHitEvent();
+#pragma endregion
+
+
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+
+
+	UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
+		FOnEnemyHit OnEnemyHit;
+
+
+private:
+
 	UWorld* World;
 
+	//inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
+	//	if (OnEnemyHit.IsBound())  OnEnemyHit.Broadcast(_HitActor, (*WeaponData)->BaseWeaponDamage);
+	//}
+
+	inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
+		UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
+		if (OnEnemyHit.IsBound()) {
+			OnEnemyHit.Broadcast(_HitActor, _DamageAmount);
+			UE_LOG(LogTemp, Warning, TEXT("Broadcast hit: Bound = true"));
+		}
+	}
 
 	
 };

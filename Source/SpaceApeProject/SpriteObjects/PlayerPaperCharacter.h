@@ -78,10 +78,12 @@ private:
 	/** Called to choose the correct animation to play based on the character's movement state */
 	void UpdateAnimation();
 
-
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+		class USpriteShadowComponent* ShadowComponent;
 
 //public:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -128,8 +130,8 @@ protected:
 
 	void MoveUp(float Value);
 	void MoveRight(float Value);
-	//void ShootUp(float Value);
-	//void ShootRight(float Value);
+	void ShootUp(float Value);
+	void ShootRight(float Value);
 
 
 	int CurrentHorizontalShootValue = 0;
@@ -138,6 +140,9 @@ protected:
 	void ShootToHeading(Heading HeadingDirection);
 
 	void ShotTimerExpired();
+
+	UFUNCTION()
+		void DealDamage(AActor* _Enemy, int _DamageAmount);
 
 public:
 	APlayerPaperCharacter();
