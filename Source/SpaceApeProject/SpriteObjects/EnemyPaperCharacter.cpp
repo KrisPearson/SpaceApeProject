@@ -48,13 +48,13 @@ void AEnemyPaperCharacter::ReceiveDamage(int _DamageAmount, bool& _IsDead, int& 
 
 	// could pass enemyscore value + damage here? Perhaps add to a single in return value, as opposed to pointer params? Leave it as is for now....
 
-	//if (Role < ROLE_Authority)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("WARNING: ServerReceiveDamage Disabled"));
+	if (Role < ROLE_Authority)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("WARNING: ServerReceiveDamage Disabled"));
 
-	//	//	ServerReceiveDamage(_DamageAmount);
-	//}
-	//else {
+		//	ServerReceiveDamage(_DamageAmount);
+	}
+	else {
 
 	//	// Add the damage dealt to the score and check whether the damage dealt leaves the enemy at 0hp. If so, then remove the remainder.
 	//	_ScoreToAdd = (CurrentHealthPoints - _DamageAmount) <= 0 ? (_DamageAmount - (CurrentHealthPoints % _DamageAmount)) : _DamageAmount;
@@ -70,7 +70,7 @@ void AEnemyPaperCharacter::ReceiveDamage(int _DamageAmount, bool& _IsDead, int& 
 	//		_IsDead = false;
 			MulticastPlayDamageFlash();
 	//	}
-	//}
+	}
 
 }
 
@@ -80,6 +80,10 @@ Tells the material to flicker, following the enemy recieving damage.
 Called on server, and runs on server and all clients.
 */
 void AEnemyPaperCharacter::MulticastPlayDamageFlash_Implementation() {
+	if (Role == ROLE_Authority) {
+		UE_LOG(LogTemp, Warning, TEXT(" MulticastPlayDamageFlash_Implementation Authority"));
+	}
+	else UE_LOG(LogTemp, Warning, TEXT(" MulticastPlayDamageFlash_Implementation Not Authority"));
 	if (DynamicEnemyMaterial != nullptr) {
 		if (World != nullptr) {
 			// Send the current time to the material, which will then handle the duration of the flicker.

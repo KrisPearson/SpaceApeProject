@@ -59,11 +59,14 @@ void USpriteShadowComponent::UpdateDecal() {
 			//The trace data is stored here
 			FHitResult HitData(ForceInit);
 
-			ECollisionChannel CollisionChannel = ECC_WorldStatic;
 
-			FCollisionQueryParams CollisionParams;
-			CollisionParams.AddIgnoredActor(GetOwner());
+//			ETraceQueryType MyTraceType = UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel2);
 
+			ECollisionChannel CollisionChannel = ECC_GameTraceChannel6;//ECC_WorldStatic;
+			
+			FCollisionQueryParams CollisionParams = FCollisionQueryParams( FName(TEXT("ShadowTrace")), true, GetOwner() );
+			//CollisionParams.AddIgnoredActor(GetOwner());
+			
 			World->LineTraceSingleByChannel(
 				HitOut,
 				Start,
@@ -75,10 +78,17 @@ void USpriteShadowComponent::UpdateDecal() {
 			if (HitOut.GetActor() != NULL) {
 				//HitOut.Distance; ///TODO: Use distance to scale or "fade in/ out" the shadow. Use a min and max distance to scale from 0 to ShadowScale
 				Location.Z = HitOut.ImpactPoint.Z; // Set the Z position of the Decal to that of the point hit on the other actor
-			}
-			else Location.Z = Location.Z - 50;
+				
 
+				if (HitOut.Actor->GetFName().ToString() != "Floor") UE_LOG(LogTemp, Warning, TEXT("HitOut = %s"), *HitOut.Actor->GetFName().ToString());
+			}
+			else {
+				Location.Z = Location.Z - 50;
+				UE_LOG(LogTemp, Warning, TEXT("HitOut == null"));
+			}
 			//ShadowDecal->SetActorLocation(Location);
+
+
 			TargetLocation = Location;
 		}
 	}

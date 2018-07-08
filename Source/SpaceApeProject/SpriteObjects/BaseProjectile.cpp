@@ -1,87 +1,92 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserve
 
-#include "BaseProjectile.h"
+#include "SpriteObjects/BaseProjectile.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-//#include "Components/BaseProjectileComponent.h"
+#include "Engine/StaticMesh.h"
+#include "ParticleDefinitions.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Components/ObjectPoolComponent.h"
+#include "Components/SphereComponent.h" 
+#include "Sound/SoundBase.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
+#include "SpriteObjects/EnemyPaperCharacter.h"
 
 #include "Engine.h"
 
 
-//TODO: Consider whether enemies need their own projectile class - could both inherrit from same base
 
-// Sets default values
-ABaseProjectile::ABaseProjectile()
-{
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+/*
+The Projectile is responsible for:
+> Handling Colission
+> The SPeed of the projectile
+> Projectile art (meshes, particles)
+*/
 
-	bReplicates = true;
 
-	static ConstructorHelpers::FObjectFinder<UParticleSystem> ProjectileParticleAsset(TEXT("/Game/Particles/Test_ParticleSystem"));
+void ABaseProjectile::BeginPlay() {
+	Super::BeginPlay();
 
-	// Colisssion Mesh
-	ProjectileMesh = CreateDefaultSubobject<USphereComponent>(TEXT("ProjectileMesh"));
-	ProjectileMesh->SetVisibility(true);
-	ProjectileMesh->SetEnableGravity(false);
-	//ProjectileMesh->SetStaticMesh(ProjectileMeshAsset.Object);
-	ProjectileMesh->BodyInstance.SetCollisionProfileName("PlayerProjectile"); //TODO: Consider how best to change colission type (two different child classes?)
+	World = GetWorld();
+}
+
+ABaseProjectile::ABaseProjectile() {
+
+	ProjectileMesh = CreateDefaultSubobject<USphereComponent>(TEXT("CollissionMesh"));
+	ProjectileMesh->BodyInstance.SetCollisionProfileName("Projectile");
 	ProjectileMesh->OnComponentHit.AddDynamic(this, &ABaseProjectile::OnHit);
 	RootComponent = ProjectileMesh;
 
-	// Movement Component
+	ProjectileParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ProjectileParticle"));
+	ProjectileParticle->SetupAttachment(RootComponent);
+
+	HitEffectParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("HitParticle"));
+	HitEffectParticle->SetupAttachment(RootComponent);
+	HitEffectParticle->DeactivateSystem();
+
+	ProjectileParticle->EmitterDelay = 0.0f;
+
+	// Use a ProjectileMovementComponent to govern this projectile's movement
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = ProjectileMesh;
-	ProjectileMovement->InitialSpeed = 1000.f;
+	ProjectileMovement->InitialSpeed = 2000.f;
 	ProjectileMovement->MaxSpeed = 15000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->ProjectileGravityScale = 0.f; // No gravity
 	ProjectileMovement->bShouldBounce = false;
-	ProjectileMovement->Bounciness = 1.0f; // Do not lose velocity when bounces.
-	ProjectileMovement->SetUpdatedComponent(GetRootComponent()); // Ensures that the root component is updated by the projectile movement component
+	ProjectileMovement->Bounciness = 1.0f; // Does not lose velocity when bounces.
+	ProjectileMovement->SetUpdatedComponent(GetRootComponent()); 
 
-	//Particle System
-	ProjectileParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ProjectileParticle"));
-	ProjectileParticle->SetTemplate(ProjectileParticleAsset.Object);
-	ProjectileParticle->SetupAttachment(RootComponent);
+	bReplicates = true;
 
+	ToggleEnabled(false);
+
+	CurrentMoveSpeed = 1500;
 
 }
+
 void ABaseProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ABaseProjectile, CurrentMoveSpeed);
+	DOREPLIFETIME(ABaseProjectile, ProjectileDamage);
+	DOREPLIFETIME(ABaseProjectile, WeaponDataID);
 }
 
-// Called when the game starts or when spawned
-void ABaseProjectile::BeginPlay()
-{
-	Super::BeginPlay();
-	World = GetWorld();
-}
 
-// Called every frame
-void ABaseProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
-	UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile::OnHit"));
 	if (Role == ROLE_Authority) {
-		//if (WeaponData != nullptr) BroadcastHit(OtherActor, (*WeaponData)->BaseWeaponDamage);
-		BroadcastHit(OtherActor, 10 /*Damage*/);
-
-		//for (UBaseProjectileComponent* Component : ProjectileComponents) {
-		//	Component->ExecuteHitEvent();
-		//}
+		if (WeaponData != nullptr) BroadcastHit(OtherActor, (*WeaponData)->BaseWeaponDamage);
 	}
 
-	//if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
-	//if (HitEffectParticle != nullptr) { HitEffectParticle->ActivateSystem(true); }
+	if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
+	if (HitEffectParticle != nullptr) { HitEffectParticle->ActivateSystem(true); }
 
-	//ToggleEnabled(false);
+	ToggleEnabled(false);
 
 	/*
 
@@ -104,10 +109,123 @@ void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UP
 	*/
 
 
-	//if (OwningPool != NULL) {
+	if (OwningPool != NULL) {
 		//SetProjectileLocationAndDirection(FVector(0, 0, 0), FVector(0, 0, 0), false); // this doesn't appear to be working
 		//OwningPool->ReturnReusableReference(this);
-		//if (World != nullptr) World->GetTimerManager().ClearTimer(ReturnToPoolTimer);
-		//if (World != nullptr) World->GetTimerManager().SetTimer(ReturnToPoolTimer, this, &ASpaceApeProjectile::ResetProjectile, 4.f);
-	//}
+		if (World != nullptr) World->GetTimerManager().ClearTimer(ReturnToPoolTimer);
+		if (World != nullptr) World->GetTimerManager().SetTimer(ReturnToPoolTimer, this, &ABaseProjectile::ResetProjectile, 4.f);
+	}
+}
+
+
+
+/*
+Enables and disabled the projectile. Used for getting it from and returning it too the object pool and
+when restarting the projectile following a collission or other similar event.
+In order to enable the projectile over the network, this method should  be called before applying other changes.
+*/
+void ABaseProjectile::ToggleEnabled(bool _value) {
+
+	if (_value) { // enable the projectile
+
+				  UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled true"));
+
+		ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		ProjectileMesh->SetVisibility(true);
+		ProjectileParticle->ActivateSystem(true);
+		ProjectileMovement->Activate();
+		HitEffectParticle->DeactivateSystem();
+		ProjectileMovement->SetUpdatedComponent(GetRootComponent()); // moved to constructor
+
+		if (World != nullptr) World->GetTimerManager().SetTimer(ReturnToPoolTimer, this, &ABaseProjectile::ResetProjectile, 4.f);
+
+	}
+	else { // disable the projectile
+
+		   UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled false"));
+
+		ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ProjectileMesh->SetVisibility(false);
+		ProjectileParticle->DeactivateSystem();// Deactivate the particle. It may be the case that the particle will remain if lifetime = 0. If so, check KillOnDeactivate in the particle system.
+		//HitEffectParticle->DeactivateSystem();
+		ProjectileMovement->Deactivate();
+	}
+}
+
+/*
+Updates the location and velocity of the projectile.
+This is the intended method for firing the projectile from the weapon component.
+*/
+void ABaseProjectile::SetProjectileLocationAndDirection(FVector _Loc, FVector _Vel, bool _ToggleEnabled) {
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" SetProjectileLocationAndDirection. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
+	if (Role == ROLE_Authority) {
+		UE_LOG(LogTemp, Log, TEXT(" SetProjectileLocationAndDirection, %f %f  %f"), _Loc.X, _Loc.Y, _Loc.Z);
+		MulticastSetLocationAndVelocityDirection(_Loc, _Vel, _ToggleEnabled);
+	}
+}
+
+void ABaseProjectile::PassNewWeaponData(FWeaponData _NewWeaponData, int _NewWeaponDataID) {
+
+	UE_LOG(LogTemp, Log, TEXT(" PassNewWeaponData old id = %d. new id = %d"), WeaponDataID, _NewWeaponDataID);
+	if (Role == ROLE_Authority) {
+		WeaponDataID = _NewWeaponDataID;
+
+		ProjectileParticle->SetTemplate(_NewWeaponData.ProjectileParticleSystem);
+		HitEffectParticle->SetTemplate(_NewWeaponData.HitEffectParticleSystem);
+		HitSoundEffect = _NewWeaponData.HitSound;
+		ProjectileDamage = _NewWeaponData.BaseWeaponDamage;
+		CurrentMoveSpeed = _NewWeaponData.BaseProjectileSpeed;
+
+		MulticastAssignWeaponDataValues(_NewWeaponData.ProjectileParticleSystem, _NewWeaponData.HitEffectParticleSystem, _NewWeaponData.HitSound, _NewWeaponData.BaseProjectileSpeed);
+	}
+}
+
+void ABaseProjectile::MulticastAssignNewWeaponData_Implementation(FWeaponData _NewWeaponData) {
+
+	UE_LOG(LogTemp, Log, TEXT("MulticastAssignNewWeaponData_Implementation. Components Size = %d"), _NewWeaponData.ProjectileComponents.Num());
+
+	ProjectileParticle->SetTemplate(_NewWeaponData.ProjectileParticleSystem);
+	HitEffectParticle->SetTemplate(_NewWeaponData.HitEffectParticleSystem);
+	HitSoundEffect = _NewWeaponData.HitSound;
+	ProjectileDamage = _NewWeaponData.BaseWeaponDamage;
+	CurrentMoveSpeed = _NewWeaponData.BaseProjectileSpeed;
+}
+
+/*
+For some reason, the weapondata must be broken up into its individual value types in order to pass them to the client, or else they
+*/
+void ABaseProjectile::MulticastAssignWeaponDataValues_Implementation(UParticleSystem* _NewParticleSystem, UParticleSystem* _NewHitParticleSystem, USoundBase* _HitSound, float _NewSpeed) {
+	ProjectileParticle->SetTemplate(_NewParticleSystem);
+	HitEffectParticle->SetTemplate(_NewHitParticleSystem);
+	HitSoundEffect = _HitSound;
+	//ProjectileDamage = _BaseWeaponDamage;
+	CurrentMoveSpeed = _NewSpeed;
+
+}
+/*
+Updates the projectiles location and velocity across the network.
+*/
+void ABaseProjectile::MulticastSetLocationAndVelocityDirection_Implementation(FVector _Loc, FVector _Vel, bool _ToggleEnabled) {
+	ToggleEnabled(_ToggleEnabled); // re-enable movement component and restart particle system.
+	SetActorLocation(_Loc);	// set the location of the projectile on the client(s) and server
+	ProjectileMovement->Velocity = _Vel * CurrentMoveSpeed;
+}
+
+void ABaseProjectile::ResetProjectile() {
+	if (OwningPool != NULL) {
+		SetProjectileLocationAndDirection(FVector(0, 0, 0), FVector(0, 0, 0), false); // this doesn't appear to be working
+		OwningPool->ReturnReusableReference(this);
+	}
+}
+
+
+/*
+Updates the velocity o the projectile on cliets. Called whenever a change is made to the velocity.
+Only works with bReplicateMovement.....
+*/
+void  ABaseProjectile::PostNetReceiveVelocity(const FVector& NewVelocity) {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" ToggleEnabled. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
+
+	UE_LOG(LogTemp, Log, TEXT(" PostNetReceiveVelocity %f %f %f"), NewVelocity.X, NewVelocity.Y, NewVelocity.Z);
+	ProjectileMovement->Velocity = NewVelocity;
 }

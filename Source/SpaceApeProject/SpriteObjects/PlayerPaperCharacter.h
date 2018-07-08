@@ -15,16 +15,17 @@
 //	H_None UMETA(DisplayName = "No Heading") = -1
 //};
 
-enum class Heading  {
+UENUM()
+enum class Heading {
 	H_East= 0,
 	H_North = 1,
 	H_West = 2,
 	H_South = 3,
 
-	H_None = -1
+	H_None = 99
 };
 
-
+UENUM(BlueprintType)
 enum class EFaceDirection : uint8 {
 	FD_Left UMETA(DisplayName = "Face Left"),
 	FD_Right UMETA(DisplayName = "Face Right"),
@@ -55,12 +56,18 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 
-	/** Projects a shadow beneath the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UDecalComponent* ShadowDecal;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+	class UPaperCharacterAnimationComponent* AnimationComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+	class USpriteShadowComponent* ShadowComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
+		class USoundBase* FireSound;
 
 
-	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void Tick(float DeltaTime) override;
 
 	// Static names for axis bindings
 	static const FName MoveUpBinding;
@@ -75,15 +82,24 @@ private:
 	/** Handle for efficient management of ShotTimerExpired timer */
 	FTimerHandle TimerHandle_ShotTimerExpired;
 
-	/** Called to choose the correct animation to play based on the character's movement state */
-	void UpdateAnimation();
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
-		class USpriteShadowComponent* ShadowComponent;
+
+	UPROPERTY()
+	class UBaseWeaponComponent* EquippedWeaponComponent;
+
+	struct FWeaponData* EquippedWeaponData;
+
+	UFUNCTION(NetMulticast, Reliable)
+		void MulticastPlayFireSound();
+	virtual void MulticastPlayFireSound_Implementation();
+
+
+
+
 
 //public:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -91,53 +107,77 @@ private:
 
 protected:
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
 	virtual void BeginPlay() override;
 
+	void HandleShooting();
+
+	void HandleMovement(float DeltaTime);
+
+
+
+	EFaceDirection LastUpdatedMovingDirection;
+
+	UPROPERTY(Replicated)
 	EFaceDirection CurrentMovingDirection;
+
+
+	UPROPERTY(Replicated)
 	EFaceDirection CurrentShootingDirection;
-	//bool bIsMoving = false;
+
+	//UPROPERTY(ReplicatedUsing = OnRep_ReplicatedShootingDirection)
+	EFaceDirection ReplicatedShootingDirection;
+
+
+
+	UFUNCTION()
+	void OnRep_ReplicatedShootingDirection();
+
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerModifyMoveDirection(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue);
+	virtual bool ServerModifyMoveDirection_Validate(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue) { return true; };
+	virtual void ServerModifyMoveDirection_Implementation(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue) { TargetedActor->CurrentMovingDirection = NewValue; };
+
+
+	// The default weapon, as assigned in the character blueprint. 
+	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<class UBaseWeaponComponent> DefaultWeaponComponent;
+
+
+
+
 	bool bIsShooting = false;
 
+	//The object count assigned to the projectile pool on its creation.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shooting, meta = (AllowPrivateAccess = "true"))
+		int DefaultProjectilePoolSize = 60;
+
+	class UObjectPoolComponent* ProjectilePool;
+
+
+
 	//TODO:Move to animation component
-
-	// The animation to play while running around
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* WalkRightFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* WalkLeftFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* WalkUpFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* WalkDownFlipbook;
-
-	// The animation to play while idle (standing still)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* IdleRightFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* IdleLeftFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* IdleUpFlipbook;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-		class UPaperFlipbook* IdleDownFlipbook;
-
-	
 
 	void MoveUp(float Value);
 	void MoveRight(float Value);
 	void ShootUp(float Value);
 	void ShootRight(float Value);
 
-
 	int CurrentHorizontalShootValue = 0;
 	int CurrentVerticalShootValue = 0;
 
+	float CurrentHorizontalMoveValue = 0;
+	float CurrentVerticalMoveValue = 0;
+
 	void ShootToHeading(Heading HeadingDirection);
+
+	UFUNCTION(Reliable, Server, WithValidation)
+		void ServerShootToHeading(Heading HeadingDirection);
+	void ServerShootToHeading_Implementation(Heading HeadingDirection);
+	bool ServerShootToHeading_Validate(Heading HeadingDirection) { return true;  };
 
 	void ShotTimerExpired();
 
@@ -151,4 +191,12 @@ public:
 	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return ObliqueViewCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	inline bool GetIsShooting() { return bIsShooting; }
+
+	inline EFaceDirection GetCurrentShootingDirection() { return CurrentShootingDirection; }
+
+	inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
+
+	void ChangeWeapon(TSubclassOf<class UBaseWeaponComponent> _NewWeapon);
 };
