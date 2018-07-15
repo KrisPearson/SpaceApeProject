@@ -15,6 +15,7 @@
 #include "Components/ObjectPoolComponent.h"
 #include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/BaseWeaponComponent.h"
+#include "Components/BoxComponent.h"
 
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
@@ -24,6 +25,8 @@
 #include "DrawDebugHelpers.h"
 
 #include "SpriteObjects/EnemyPaperCharacter.h"
+
+const float CAMERA_ANGLE = -60.0f;
 
 
 FString GetEnumText(ENetRole Role) {
@@ -66,8 +69,12 @@ const FName APlayerPaperCharacter::FireRightBinding("ShootHorizontalAxis");
 
 APlayerPaperCharacter::APlayerPaperCharacter() {
 
+	float angle = CAMERA_ANGLE;
+
 	// Rotate the Sprite to face the negative X direction and tilt up to face the camera
-	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, -30.f));
+	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CAMERA_ANGLE));
+	GetSprite()->AddLocalOffset(FVector(10, 0, 0));
+
 	// Enable replication on the Sprite component so animations show up when networked
 	//GetSprite()->SetIsReplicated(true);
 
@@ -75,19 +82,19 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 	// Create a camera boom attached to the root (capsule) 
 		//TODO: Replace camera component with a Level Camera
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 500.0f;
-	CameraBoom->SocketOffset = FVector(0.0f, 0.0f, 120.0f);
+	CameraBoomComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoomComponent->SetupAttachment(RootComponent);
+	CameraBoomComponent->TargetArmLength = 500.0f;
+	CameraBoomComponent->SocketOffset = FVector(0.0f, 0.0f, 120.0f);
 	//CameraBoom->bAbsoluteRotation = true;
-	CameraBoom->bDoCollisionTest = false;
-	CameraBoom->RelativeRotation = FRotator(-40.0f, 0.0f, 0.0f);
+	CameraBoomComponent->bDoCollisionTest = false;
+	CameraBoomComponent->RelativeRotation = FRotator(CAMERA_ANGLE, 0.0f, 0.0f);
 
 	// Create an orthographic camera (no perspective) and attach it to the boom
 	ObliqueViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ObliqueViewCamera"));
 	//ObliqueViewCameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
 	ObliqueViewCameraComponent->OrthoWidth = 2048.0f;
-	ObliqueViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	ObliqueViewCameraComponent->SetupAttachment(CameraBoomComponent, USpringArmComponent::SocketName);
 
 	// Prevent all automatic rotation behavior on the camera, character, and camera component
 	//CameraBoom->bAbsoluteRotation = true;
@@ -161,6 +168,8 @@ void APlayerPaperCharacter::BeginPlay() {
 			ServerModifyMoveDirection(this, CurrentMovingDirection);
 			LastUpdatedMovingDirection = CurrentMovingDirection;
 		}
+
+		UpdateCameraBounds(DeltaTime);
 
 		//if (HasAuthority()) {
 
@@ -399,6 +408,8 @@ void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 	}
 }
 
+
+
 /*
 This will be used primarily for weapon pickups.
 Replaces the current weapon witha  new o ne.
@@ -425,4 +436,52 @@ void APlayerPaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewW
 		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
 	}
 
+}
+
+void APlayerPaperCharacter::SetCameraBounds(UBoxComponent* CameraBoundsBox) {
+	if (CameraBoundsBox != nullptr) {
+		CameraBoundsRef = CameraBoundsBox;
+		FVector BoxExtent = CameraBoundsRef->GetScaledBoxExtent();
+
+		FVector Origin = CameraBoundsRef->GetComponentLocation();
+		
+		//UE_LOG(LogTemp, Warning, TEXT("Box Origin = %f , %f , %f"), Origin.X, Origin.Y, Origin.Z);
+
+		CameraBoundsMin = FVector(Origin.X  - BoxExtent.X, Origin.Y - BoxExtent.Y, Origin.Z  - BoxExtent.Z);
+		CameraBoundsMax = FVector(Origin.X  + BoxExtent.X, Origin.Y + BoxExtent.Y, Origin.Z  + BoxExtent.Z);
+
+		UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMin = %f , %f , %f"), CameraBoundsMin.X, CameraBoundsMin.Y, CameraBoundsMin.Z);
+
+		UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMax = %f , %f , %f"), CameraBoundsMax.X, CameraBoundsMax.Y, CameraBoundsMax.Z);
+
+		UE_LOG(LogTemp, Warning, TEXT("CameraBoundsRef = %f , %f , %f"), CameraBoundsRef->GetComponentTransform().GetLocation().X, CameraBoundsRef->GetComponentTransform().GetLocation().Y, CameraBoundsRef->GetComponentTransform().GetLocation().Z);
+
+	}
+}
+
+void APlayerPaperCharacter::UpdateCameraBounds(float DeltaTime) {
+	if (CameraBoundsRef != nullptr) {
+		FVector CameraLocation = CameraBoomComponent->GetComponentLocation(); //ObliqueViewCameraComponent->GetComponentLocation();
+		FVector CameraVelocity = (GetActorLocation() - CameraLocation);
+
+		FVector BoxOrigin = CameraBoundsRef->GetComponentLocation();
+
+		FVector ValueToClamp = CameraLocation + CameraVelocity;
+		FVector MinimumClamp =/* BoxOrigin +*/ CameraBoundsMin;
+		FVector MaximumClamp = /*BoxOrigin + */CameraBoundsMax;
+
+		FVector TargetLocation = FVector(
+			FMath::Clamp(ValueToClamp.X, MinimumClamp.X, MaximumClamp.X),
+			FMath::Clamp(ValueToClamp.Y, MinimumClamp.Y, MaximumClamp.Y),
+			FMath::Clamp(ValueToClamp.Z, MinimumClamp.Z, MaximumClamp.Z)
+		);
+
+
+
+		FVector CameraDestination = FMath::VInterpTo(CameraBoomComponent->GetComponentLocation(), TargetLocation, DeltaTime, 10);
+
+		CameraBoomComponent->SetWorldLocation(CameraDestination);
+
+	}
+	else GEngine->AddOnScreenDebugMessage(-1, 0.01f, FColor::Orange, FString::Printf(TEXT(" CameraBoundsRef == nullptr ") ) );
 }

@@ -117,7 +117,6 @@ void UPaperCharacterAnimationComponent::UpdateAnimation() {
 
 	//UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.0f) ? RunningAnimation : IdleAnimation;
 	if (DesiredAnimation != nullptr && OwningCharacter->GetSprite()->GetFlipbook() != DesiredAnimation) {
-
 		OwningCharacter->GetSprite()->SetFlipbook(DesiredAnimation);
 	}
 }

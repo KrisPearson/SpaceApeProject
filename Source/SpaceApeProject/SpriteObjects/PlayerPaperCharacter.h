@@ -54,7 +54,7 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter
 
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+	class USpringArmComponent* CameraBoomComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
 	class UPaperCharacterAnimationComponent* AnimationComponent;
@@ -98,6 +98,12 @@ private:
 	virtual void MulticastPlayFireSound_Implementation();
 
 
+	void UpdateCameraBounds(float DeltaTime);
+
+	FVector CameraBoundsMin;
+	FVector CameraBoundsMax;
+
+	class UBoxComponent* CameraBoundsRef;
 
 
 
@@ -184,13 +190,16 @@ protected:
 	UFUNCTION()
 		void DealDamage(AActor* _Enemy, int _DamageAmount);
 
+
+
+
 public:
 	APlayerPaperCharacter();
 
 	/** Returns SideViewCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return ObliqueViewCameraComponent; }
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoomComponent; }
 
 	inline bool GetIsShooting() { return bIsShooting; }
 
@@ -199,4 +208,6 @@ public:
 	inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
 
 	void ChangeWeapon(TSubclassOf<class UBaseWeaponComponent> _NewWeapon);
+
+	void SetCameraBounds(UBoxComponent* CameraBoundsBox);
 };

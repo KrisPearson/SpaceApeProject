@@ -6,9 +6,12 @@
 #include "Materials/MaterialInstance.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SpriteShadowComponent.h"
 
 AEnemyPaperCharacter::AEnemyPaperCharacter() {
 	GetCapsuleComponent()->SetCollisionProfileName("Enemy");
+
+	ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
 }
 
 void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {

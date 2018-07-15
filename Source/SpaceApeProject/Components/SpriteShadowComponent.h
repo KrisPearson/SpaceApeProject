@@ -26,7 +26,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	void UpdateDecal();
+	void UpdateDecal(float DeltaTime);
 
 	FVector TargetLocation;
 
@@ -44,3 +44,4 @@ public:
 
 	void SetShadowScale(float NewScale);
 };
+ 

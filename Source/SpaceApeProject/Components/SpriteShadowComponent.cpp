@@ -36,13 +36,13 @@ void USpriteShadowComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	UpdateDecal();
+	UpdateDecal(DeltaTime);
 
-	ShadowDecal->SetActorLocation( FMath::VInterpTo(ShadowDecal->GetActorLocation(), TargetLocation, DeltaTime, 1000) );
+	
 }
 
 // Updates the decals position to follow a location beneath the owningAcotr
-void USpriteShadowComponent::UpdateDecal() {
+void USpriteShadowComponent::UpdateDecal(float DeltaTime) {
 	if (ShadowDecal != nullptr) {
 		FVector Location = GetOwner()->GetActorLocation();
 
@@ -80,11 +80,11 @@ void USpriteShadowComponent::UpdateDecal() {
 				Location.Z = HitOut.ImpactPoint.Z; // Set the Z position of the Decal to that of the point hit on the other actor
 				
 
-				if (HitOut.Actor->GetFName().ToString() != "Floor") UE_LOG(LogTemp, Warning, TEXT("HitOut = %s"), *HitOut.Actor->GetFName().ToString());
+				//if (HitOut.Actor->GetFName().ToString() != "Floor") UE_LOG(LogTemp, Warning, TEXT("HitOut = %s"), *HitOut.Actor->GetFName().ToString());
 			}
 			else {
-				Location.Z = Location.Z - 50;
-				UE_LOG(LogTemp, Warning, TEXT("HitOut == null"));
+				Location.Z = Location.Z - 70;
+				//UE_LOG(LogTemp, Warning, TEXT("HitOut == null"));
 			}
 			//ShadowDecal->SetActorLocation(Location);
 
@@ -92,6 +92,8 @@ void USpriteShadowComponent::UpdateDecal() {
 			TargetLocation = Location;
 		}
 	}
+	//ShadowDecal->SetActorLocation(FMath::VInterpTo(ShadowDecal->GetActorLocation(), TargetLocation, DeltaTime, 1000));
+	ShadowDecal->SetActorLocation(FMath::VInterpConstantTo(ShadowDecal->GetActorLocation(), TargetLocation, DeltaTime, 1000));
 }
 
 void USpriteShadowComponent::SetShadowScale(float NewScale) {

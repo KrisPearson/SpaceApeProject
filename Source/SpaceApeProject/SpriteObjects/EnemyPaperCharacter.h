@@ -42,6 +42,8 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public APaperCharacter
 	UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "100", ClampMax = "10000", UIMin = "100", UIMax = "10000"))
 		int SpawnCost = 1;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+		class USpriteShadowComponent* ShadowComponent;
 
 
 	//UFUNCTION()
