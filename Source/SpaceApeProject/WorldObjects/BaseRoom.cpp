@@ -6,6 +6,8 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/SpringArmComponent.h"
 
+#include "Components/PlayerCameraControllerComponent.h"
+
 #include "SpriteObjects/PlayerPaperCharacter.h"
 
 const float CAMERA_ANGLE = -60.0f; // TEMP
@@ -22,6 +24,7 @@ ABaseRoom::ABaseRoom() {
 	RoomTriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Room Trigger Box"));
 	RoomTriggerBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	RoomTriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseRoom::OnComponentEnterRoom);
+	RoomTriggerBox->OnComponentEndOverlap.AddDynamic(this, &ABaseRoom::OnComponentExitRoom);
 	RoomTriggerBox->SetupAttachment(RoomMesh);
 
 
@@ -63,16 +66,25 @@ void ABaseRoom::Tick(float DeltaTime) {
 }
 
 void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult) {
+	
 	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
 		// Inform character interace of room change
 		// Pass new camera arm component reference
 		// Trigger Room Sequence
 
 
-
-		Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(CameraBounds);
+		auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+		if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
+		//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
 
 		OnRunRoomEvents();
+	}
+}
+
+void ABaseRoom::OnComponentExitRoom(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
+
+		//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(nullptr);
 	}
 }
 

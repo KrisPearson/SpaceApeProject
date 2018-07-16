@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PaperCharacter.h"
+#include "Interfaces/SpriteCharacterInterface.h"
 #include "PlayerPaperCharacter.generated.h"
 
 //enum class EHeading :uint8 {
@@ -40,21 +41,11 @@ enum class EFaceDirection : uint8 {
  * 
  */
 UCLASS()
-class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter
+class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter, public ISpriteCharacterInterface
 {
 	GENERATED_BODY()
 
 		class UWorld* World;
-
-
-	//TODO: Implement camera switching on the controller class (each room could hold)
-	/** Oblique view camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera, meta=(AllowPrivateAccess="true"))
-	class UCameraComponent* ObliqueViewCameraComponent;
-
-	/** Camera boom positioning the camera above the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoomComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
 	class UPaperCharacterAnimationComponent* AnimationComponent;
@@ -63,7 +54,16 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter
 	class USpriteShadowComponent* ShadowComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
-		class USoundBase* FireSound;
+	class USoundBase* FireSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+		class UPlayerCameraControllerComponent* CameraController;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		class USpringArmComponent* CameraBoomComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		class UCameraComponent* ObliqueViewCameraComponent;
 
 
 
@@ -98,12 +98,7 @@ private:
 	virtual void MulticastPlayFireSound_Implementation();
 
 
-	void UpdateCameraBounds(float DeltaTime);
 
-	FVector CameraBoundsMin;
-	FVector CameraBoundsMax;
-
-	class UBoxComponent* CameraBoundsRef;
 
 
 
@@ -196,10 +191,10 @@ protected:
 public:
 	APlayerPaperCharacter();
 
-	/** Returns SideViewCameraComponent subobject **/
-	FORCEINLINE class UCameraComponent* GetSideViewCameraComponent() const { return ObliqueViewCameraComponent; }
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoomComponent; }
+	FVector FaceDirectionVector;
+
+	//ISpriteCharacterInterface method
+	virtual FVector GetCharacterFaceDirection_Implementation() const override;
 
 	inline bool GetIsShooting() { return bIsShooting; }
 
@@ -209,5 +204,5 @@ public:
 
 	void ChangeWeapon(TSubclassOf<class UBaseWeaponComponent> _NewWeapon);
 
-	void SetCameraBounds(UBoxComponent* CameraBoundsBox);
+
 };

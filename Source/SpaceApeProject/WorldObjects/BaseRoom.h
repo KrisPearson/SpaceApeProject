@@ -51,6 +51,11 @@ protected:
 		bool bFromSweep,
 		const FHitResult &SweepResult);
 
+	UFUNCTION()
+		void OnComponentExitRoom(UPrimitiveComponent* OverlappedComp, 
+			AActor* OtherActor, 
+			UPrimitiveComponent* OtherComp, 
+			int32 OtherBodyIndex);
 
 	void BeginRoomEvents();
 
