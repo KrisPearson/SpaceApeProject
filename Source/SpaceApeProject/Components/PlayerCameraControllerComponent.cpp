@@ -1,5 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+PlayerCameraControllerComponent.cpp
+Purpose: Handles camera events on behalf of the player character.
+
+@author Kristian Pearson
+@version 0.5 17/18/2018
+*/
+
+
 #include "PlayerCameraControllerComponent.h"
 #include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
@@ -39,30 +48,6 @@ UPlayerCameraControllerComponent::UPlayerCameraControllerComponent()
 void UPlayerCameraControllerComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//CameraBoom = NewObject<USpringArmComponent>(GetOuter(), USpringArmComponent::StaticClass(), TEXT("CameraBoom"));
-	//FAttachmentTransformRules Rule(EAttachmentRule::KeepRelative, true);
-	//CameraBoom->AttachToComponent(GetOwner()->GetRootComponent(), Rule);
-	////CameraBoom = ConstructObject<USpringArmComponent>(USpringArmComponent::StaticClass(), this, "CameraBoom");
-	////CameraBoom->AttachTo(GetOwner()->GetRootComponent());
-	//CameraBoom->SocketOffset = FVector(0.0f, 0.0f, 120.0f);
-	//CameraBoom->bDoCollisionTest = false;
-	//CameraBoom->TargetArmLength = 500.0f;
-
-	//CameraBoom->bUsePawnControlRotation = false;
-	//CameraBoom->bInheritPitch = false;
-	//CameraBoom->bInheritRoll = false;
-	//CameraBoom->bInheritYaw = false;
-
-	//Camera = NewObject<UCameraComponent>(GetOuter(), UCameraComponent::StaticClass(), TEXT("ObliqueViewCamera"));
-	////Camera = ConstructObject<UCameraComponent>(UCameraComponent::StaticClass(), this, "ObliqueViewCamera");
-	//Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	//Camera->OrthoWidth = 2048.0f;
-	//Camera->bAutoActivate = true;
-
-	//CameraBoom->RelativeRotation = FRotator(CAMERA_ANGLE, 0.0f, 0.0f); // THIS ISN'T WORKING?????
-	//CameraBoom->SetRelativeRotation(FRotator(CAMERA_ANGLE, 0.0f, 0.0f));
-	//CameraBoom->AddLocalRotation(FRotator(/*CAMERA_ANGLE*/ 60, 0.0f, 0.0f));
 }
 
 
@@ -72,16 +57,12 @@ void UPlayerCameraControllerComponent::TickComponent(float DeltaTime, ELevelTick
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	UpdateCameraBounds(DeltaTime);
-
-
-	//CameraBoom->AddLocalRotation(FRotator(CAMERA_ANGLE, 0.0f, 0.0f));
-	// ...
 }
 
+/*Informs the controller of a new set of camera bounds.
+@param The box component from which to source the new bounds.
+*/
 void UPlayerCameraControllerComponent::SetCameraBounds(const UBoxComponent & CameraBoundsBox) {
-
-	
-
 	if (GetOwnerRole() == ROLE_Authority || GetOwnerRole() == ROLE_AutonomousProxy) {
 		FVector BoxExtent = CameraBoundsBox.GetScaledBoxExtent();
 
@@ -103,8 +84,7 @@ void UPlayerCameraControllerComponent::SetBoomReference(USpringArmComponent & Ne
 
 }
 
-
-
+/*Confines the camera to the CameraBounds of the currently occupied room, as a assigned by the SetCameraBounds method. */
 void UPlayerCameraControllerComponent::UpdateCameraBounds(float DeltaTime) {
 	if (GetOwnerRole() == ROLE_Authority || GetOwnerRole() == ROLE_AutonomousProxy) {
 		if (CameraBoom != nullptr) {

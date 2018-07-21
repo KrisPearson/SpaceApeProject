@@ -61,6 +61,6 @@ protected:
 #pragma endregion
 
 private:
-	class APlayerPaperCharacter* OwningCharacter;
+	class ABasePaperCharacter* OwningCharacter;
 	
 };

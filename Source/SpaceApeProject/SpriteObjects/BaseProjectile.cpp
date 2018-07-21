@@ -22,7 +22,7 @@
 /*
 The Projectile is responsible for:
 > Handling Colission
-> The SPeed of the projectile
+> The Speed of the projectile
 > Projectile art (meshes, particles)
 */
 

@@ -16,6 +16,8 @@ public:
 	// Sets default values for this component's properties
 	USpriteShadowComponent();
 
+
+
 	// Sets the dimensions of the shadow for this component
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
 	float ShadowScale;
@@ -25,6 +27,10 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	//virtual void BeginDestroy() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void UpdateDecal(float DeltaTime);
 

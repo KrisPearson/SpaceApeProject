@@ -30,6 +30,16 @@ void USpriteShadowComponent::BeginPlay() {
 	ShadowDecal->SetActorScale3D(FVector(0.3, ShadowScale, ShadowScale));
 }
 
+//void USpriteShadowComponent::BeginDestroy() {
+//	Super::BeginDestroy();
+//	if (ShadowDecal != nullptr) ShadowDecal->Destroy();
+//}
+
+void USpriteShadowComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
+	if (ShadowDecal != nullptr) ShadowDecal->Destroy();
+}
+
 
 // Called every frame
 void USpriteShadowComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

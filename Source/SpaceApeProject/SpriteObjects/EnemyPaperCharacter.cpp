@@ -4,20 +4,25 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "PaperFlipbookComponent.h"
 #include "Materials/MaterialInstance.h"
-#include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpriteShadowComponent.h"
+#include "Components/PaperCharacterAnimationComponent.h"
+
+#include "BehaviorTree/BehaviorTree.h"
 
 AEnemyPaperCharacter::AEnemyPaperCharacter() {
 	GetCapsuleComponent()->SetCollisionProfileName("Enemy");
 
-	ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
+	//ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
+
+	//AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
+
 }
 
 void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AEnemyPaperCharacter, CurrentHealthPoints);
+
 }
 
 void AEnemyPaperCharacter::BeginPlay() {
@@ -41,6 +46,8 @@ void AEnemyPaperCharacter::BeginPlay() {
 }
 
 
+
+
 /*
 This is called by the attacking class following a successful attack.
 Returns a bool via reference in order to inform the attacking class of the enemy's demise.
@@ -55,24 +62,23 @@ void AEnemyPaperCharacter::ReceiveDamage(int _DamageAmount, bool& _IsDead, int& 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("WARNING: ServerReceiveDamage Disabled"));
 
-		//	ServerReceiveDamage(_DamageAmount);
+		//ServerReceiveDamage(_DamageAmount);
 	}
 	else {
 
 	//	// Add the damage dealt to the score and check whether the damage dealt leaves the enemy at 0hp. If so, then remove the remainder.
 	//	_ScoreToAdd = (CurrentHealthPoints - _DamageAmount) <= 0 ? (_DamageAmount - (CurrentHealthPoints % _DamageAmount)) : _DamageAmount;
-	//	CurrentHealthPoints -= _DamageAmount;
+		CurrentHealthPoints -= _DamageAmount;
 
-	//	if (!CheckIfAlive())
-	//	{
-	//		_IsDead = true;
-	//		EnemyDeath();
-
-	//	}
-	//	else {
-	//		_IsDead = false;
+		if (!CheckIfAlive())
+		{
+			_IsDead = true;
+			EnemyDeath();
+		}
+		else {
+			_IsDead = false;
 			MulticastPlayDamageFlash();
-	//	}
+		}
 	}
 
 }
@@ -115,4 +121,21 @@ void AEnemyPaperCharacter::EnemyDeath() {
 	//SpawnPickup(); 
 	EnemyDeathDelegate.Broadcast(this);
 	Destroy();
+}
+
+bool AEnemyPaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
+
+	UE_LOG(LogTemp, Warning, TEXT("AEnemyPaperCharacter::RecieveDamage_Implementation"));
+
+	Super::RecieveDamage_Implementation(DamageAmount);
+
+	if (!CheckIfAlive())
+	{
+		EnemyDeath();
+	}
+	else {
+		MulticastPlayDamageFlash();
+	}
+
+	return true;
 }

@@ -26,4 +26,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Sprite")
 	FVector GetCharacterFaceDirection() const ;
+
+	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Character")
+	//bool DealDamage(class ABasePaperCharacter* CharacterToDamage, int _DamageAmount);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Character")
+		bool RecieveDamage(/*class ABasePaperCharacter* CharacterToDamage, */int _DamageAmount);
 };

@@ -10,10 +10,10 @@
 #include "GameFramework/Controller.h"
 
 #include "Components/DecalComponent.h"
-#include "SpriteObjects/BaseProjectile.h"
-#include "Components/SpriteShadowComponent.h"
+//#include "SpriteObjects/BaseProjectile.h"
+//#include "Components/SpriteShadowComponent.h"
 #include "Components/ObjectPoolComponent.h"
-#include "Components/PaperCharacterAnimationComponent.h"
+//#include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/BaseWeaponComponent.h"
 #include "Components/PlayerCameraControllerComponent.h"
 
@@ -21,7 +21,7 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Engine/World.h"
-#include "Net/UnrealNetwork.h"
+
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -105,16 +105,9 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 	ObliqueViewCameraComponent->bUsePawnControlRotation = false;
 	ObliqueViewCameraComponent->bAutoActivate = true;
 
-
-
-
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
-	ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
 
-	AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
-
-	ProjectilePool = CreateDefaultSubobject<UObjectPoolComponent>(TEXT("ProjectilePool"));
 
 	CameraController = CreateDefaultSubobject<UPlayerCameraControllerComponent>(TEXT("CameraController"));
 	CameraController->SetBoomReference(*CameraBoomComponent);
@@ -126,9 +119,7 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 }
 
-FVector APlayerPaperCharacter::GetCharacterFaceDirection_Implementation() const {
-	return FaceDirectionVector;
-}
+
 
 void APlayerPaperCharacter::SetupPlayerInputComponent(UInputComponent * InputComponent) {
 	Super::SetupPlayerInputComponent(InputComponent);
@@ -138,35 +129,10 @@ void APlayerPaperCharacter::SetupPlayerInputComponent(UInputComponent * InputCom
 	InputComponent->BindAxis(FireRightBinding, this , &APlayerPaperCharacter::ShootRight);
 }
 
-void APlayerPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	//DOREPLIFETIME(APlayerPaperCharacter, bIsShooting);
-	DOREPLIFETIME(APlayerPaperCharacter, CurrentMovingDirection);
-	DOREPLIFETIME(APlayerPaperCharacter, CurrentShootingDirection);
-}
 
 void APlayerPaperCharacter::BeginPlay() {
 	Super::BeginPlay();
-	World = GetWorld();
 
-	ChangeWeapon(DefaultWeaponComponent);
-
-	if (Role == ROLE_Authority) {
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" FillPool Called on Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-		ProjectilePool->FillPool(ABaseProjectile::StaticClass(), DefaultProjectilePoolSize);
-		if (EquippedWeaponComponent) {
-			EquippedWeaponComponent->SetObjectPoolReference(ProjectilePool);
-			EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
-		}
-
-		TArray<AActor*>* PoolArray = ProjectilePool->GetArrayPointer();
-		for (AActor* Actor : *PoolArray) {
-			
-			Cast<ABaseProjectile>(Actor)->SetWeaponData(&EquippedWeaponData);
-			Cast<ABaseProjectile>(Actor)->OnEnemyHit.AddDynamic(this, &APlayerPaperCharacter::DealDamage);
-			Cast<ABaseProjectile>(Actor)->SetPoolReference(ProjectilePool);
-		}
-	}
 }
 
 
@@ -245,7 +211,7 @@ void APlayerPaperCharacter::HandleMovement(float DeltaTime) {
 }
 
 void APlayerPaperCharacter::OnRep_ReplicatedShootingDirection() {
-	CurrentShootingDirection = ReplicatedShootingDirection;
+	//CurrentShootingDirection = ReplicatedShootingDirection; //UNCOMMENT ME!
 }
 
 void APlayerPaperCharacter::HandleShooting() {
@@ -419,19 +385,21 @@ void APlayerPaperCharacter::ShotTimerExpired() {
 	bCanFire = true;
 }
 
-void APlayerPaperCharacter::DealDamage(AActor* _Enemy, int _Amount) {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
-	if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(_Enemy)) {
-		bool isEnemyDead;
+void APlayerPaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
 
-		int scoreFromDamage;
+	Super::DealDamage(ActorToDamage, DamageAmount);
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
+	//if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(CharacterToDamage)) {
+		//bool isEnemyDead;
+
+		//int scoreFromDamage;
 
 		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
-		Enemy->ReceiveDamage(_Amount, isEnemyDead, scoreFromDamage);
+		//Enemy->ReceiveDamage(DamageAmount, isEnemyDead, scoreFromDamage);
 
-		if (isEnemyDead) {
+		//if (isEnemyDead) {
 			//scoreFromDamage += Enemy->GetScoreValue();
-		}
+	//	}
 
 		//CurrentScore += scoreFromDamage;
 
@@ -442,13 +410,21 @@ void APlayerPaperCharacter::DealDamage(AActor* _Enemy, int _Amount) {
 		//	CurrentScore += ScoreValue;
 		//}
 		//else CurrentScore += scoreFromDamage;
-	}
+	//}
+
 
 	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
 
-														//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
+	//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
+
+}
+
+bool APlayerPaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
 
 
+	Super::RecieveDamage_Implementation(DamageAmount);
+
+	return true;
 }
 
 void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
@@ -456,35 +432,5 @@ void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 		UGameplayStatics::PlaySound2D(this, FireSound);
 		//UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
-}
-
-
-
-/*
-This will be used primarily for weapon pickups.
-Replaces the current weapon witha  new o ne.
-Need to destroy old component and perhaps perform some kind of check.
-This method should eventually be made private/ protected, and some kind of public condition check method should handle weapon changes.
-*/
-void APlayerPaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewWeapon) {
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" ChangeWeapon. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-
-	if (_NewWeapon) {
-
-		//EquippedWeaponComponent = ConstructObject<UUBaseWeaponComponent>(_NewWeapon, this, *_NewWeapon->GetName()/*TEXT("InitialWeapon")*/);
-		if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->DestroyComponent();
-		EquippedWeaponComponent = NewObject<UBaseWeaponComponent>(this, _NewWeapon, *_NewWeapon->GetName());
-		EquippedWeaponComponent->SetObjectPoolReference(ProjectilePool);
-
-		EquippedWeaponComponent->RegisterComponent(); // this has been added to enable the component tick for some components
-		EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
-		//delete FireSound;
-		FireSound = EquippedWeaponComponent->GetFireSound();
-
-		//FWeaponData NewWeaponData = EquippedWeaponComponent->GetWeaponData();
-		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-	}
-
 }
 

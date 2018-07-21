@@ -1,5 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/**
+BaseRoom.cpp
+Purpose: Contains a section of environment art as well as components involved
+in gameplay events. 
+
+The BaseRoom is intended to be inherrited by Blueprint objects, in which 
+gameplay events can be scripted and sequenced. The Room will handle the initiation
+and conclusion of said events.
+
+@author Kristian Pearson
+@version 1.0 17/18/2018
+*/
+
 #include "BaseRoom.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -10,7 +23,7 @@
 
 #include "SpriteObjects/PlayerPaperCharacter.h"
 
-const float CAMERA_ANGLE = -60.0f; // TEMP
+const float CAMERA_ANGLE = -60.0f; // TODO: Make global
 
 // Sets default values
 ABaseRoom::ABaseRoom() {
@@ -27,22 +40,7 @@ ABaseRoom::ABaseRoom() {
 	RoomTriggerBox->OnComponentEndOverlap.AddDynamic(this, &ABaseRoom::OnComponentExitRoom);
 	RoomTriggerBox->SetupAttachment(RoomMesh);
 
-
-
-	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
-	//CameraBoom->TargetArmLength = 500.0f;
-	//CameraBoom->SocketOffset = FVector(0.0f, 0.0f, 120.0f);
-	////CameraBoom->bAbsoluteRotation = true;
-	//CameraBoom->bDoCollisionTest = false;
-	//CameraBoom->RelativeRotation = FRotator(CAMERA_ANGLE, 0.0f, 0.0f);
-
-
-
-
-
-	PrimaryActorTick.bCanEverTick = true;
-
-	//https://answers.unrealengine.com/questions/239179/old-zelda-style-camera.html
+	PrimaryActorTick.bCanEverTick = false;
 
 }
 
@@ -50,28 +48,24 @@ ABaseRoom::ABaseRoom() {
 void ABaseRoom::BeginPlay() {
 	Super::BeginPlay();
 
+	// Get the dimensions of the room mesh and use it to 
+	//define the trigger box and camera bounds for the room
 	FVector RoomDimensions = RoomMesh->GetStaticMesh()->GetBounds().GetBox().GetSize();
 	RoomDimensions = RoomDimensions / 2;
 	if (RoomTriggerBox != nullptr) RoomTriggerBox->SetBoxExtent(RoomDimensions);
-	if (CameraBounds !=  nullptr) CameraBounds->SetBoxExtent(RoomDimensions * 0.65f);
-	else UE_LOG(LogTemp, Warning, TEXT("ABaseRoom::CameraBounds = nullptr"));
+	if (CameraBounds !=  nullptr) CameraBounds->SetBoxExtent(RoomDimensions * 0.5f);
 }
 
 
 // Called every frame
 void ABaseRoom::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-
-
 }
 
+/*The intended use of this method is to detect the player character entering the room, at which point the room will initiate its event sequence. */
 void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult) {
 	
 	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
-		// Inform character interace of room change
-		// Pass new camera arm component reference
-		// Trigger Room Sequence
-
 
 		auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
 		if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
@@ -83,6 +77,7 @@ void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, A
 
 void ABaseRoom::OnComponentExitRoom(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
+		// TODO: turn off lights
 
 		//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(nullptr);
 	}
