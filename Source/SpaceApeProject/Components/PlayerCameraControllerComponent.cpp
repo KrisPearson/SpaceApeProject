@@ -13,7 +13,7 @@ Purpose: Handles camera events on behalf of the player character.
 #include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Interfaces/SpriteCharacterInterface.h"
+#include "Interfaces/SpriteObjectInterface.h"
 
 const float CAMERA_ANGLE = -60.0f;
 
@@ -97,8 +97,8 @@ void UPlayerCameraControllerComponent::UpdateCameraBounds(float DeltaTime) {
 			//UE_LOG(LogTemp, Warning, TEXT("GetActorForwardVector = %f , %f , %f"), GetOwner()->GetActorForwardVector().X, GetOwner()->GetActorForwardVector().Y, GetOwner()->GetActorForwardVector().Z);
 			FVector Offset;
 
-			if (GetOwner()->GetClass()->ImplementsInterface(USpriteCharacterInterface::StaticClass())) {
-				Offset = ISpriteCharacterInterface::Execute_GetCharacterFaceDirection(GetOwner());
+			if (GetOwner()->GetClass()->ImplementsInterface(USpriteObjectInterface::StaticClass())) {
+				Offset = ISpriteObjectInterface::Execute_GetObjectFaceDirection(GetOwner());
 			}
 
 			FVector ValueToClamp = CameraLocation + CameraVelocity + (Offset/*TODO: Get forward vector from character*/ * OffsetMagnitude) ;

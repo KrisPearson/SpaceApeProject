@@ -42,7 +42,10 @@ void AEnemyPaperCharacter::BeginPlay() {
 	if (BaseMat != nullptr) {
 		DynamicEnemyMaterial = UMaterialInstanceDynamic::Create(BaseMat, this);
 		GetSprite()->SetMaterial(0, DynamicEnemyMaterial);
+		
 	}
+
+
 }
 
 
@@ -52,36 +55,36 @@ void AEnemyPaperCharacter::BeginPlay() {
 This is called by the attacking class following a successful attack.
 Returns a bool via reference in order to inform the attacking class of the enemy's demise.
 */
-void AEnemyPaperCharacter::ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd) {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" ReceiveDamage Called on Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-	//DynamicEnemyMaterial->SetScalarParameterValue(FName("StartTime"), World->GetTimeSeconds());
-
-	// could pass enemyscore value + damage here? Perhaps add to a single in return value, as opposed to pointer params? Leave it as is for now....
-
-	if (Role < ROLE_Authority)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("WARNING: ServerReceiveDamage Disabled"));
-
-		//ServerReceiveDamage(_DamageAmount);
-	}
-	else {
-
-	//	// Add the damage dealt to the score and check whether the damage dealt leaves the enemy at 0hp. If so, then remove the remainder.
-	//	_ScoreToAdd = (CurrentHealthPoints - _DamageAmount) <= 0 ? (_DamageAmount - (CurrentHealthPoints % _DamageAmount)) : _DamageAmount;
-		CurrentHealthPoints -= _DamageAmount;
-
-		if (!CheckIfAlive())
-		{
-			_IsDead = true;
-			EnemyDeath();
-		}
-		else {
-			_IsDead = false;
-			MulticastPlayDamageFlash();
-		}
-	}
-
-}
+//void AEnemyPaperCharacter::ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd) {
+//	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" ReceiveDamage Called on Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
+//	//DynamicEnemyMaterial->SetScalarParameterValue(FName("StartTime"), World->GetTimeSeconds());
+//
+//	// could pass enemyscore value + damage here? Perhaps add to a single in return value, as opposed to pointer params? Leave it as is for now....
+//
+//	if (Role < ROLE_Authority)
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("WARNING: ServerReceiveDamage Disabled"));
+//
+//		//ServerReceiveDamage(_DamageAmount);
+//	}
+//	else {
+//
+//	//	// Add the damage dealt to the score and check whether the damage dealt leaves the enemy at 0hp. If so, then remove the remainder.
+//	//	_ScoreToAdd = (CurrentHealthPoints - _DamageAmount) <= 0 ? (_DamageAmount - (CurrentHealthPoints % _DamageAmount)) : _DamageAmount;
+//		CurrentHealthPoints -= _DamageAmount;
+//
+//		if (!CheckIfAlive())
+//		{
+//			_IsDead = true;
+//			EnemyDeath();
+//		}
+//		else {
+//			_IsDead = false;
+//			MulticastPlayDamageFlash();
+//		}
+//	}
+//
+//}
 
 
 /*

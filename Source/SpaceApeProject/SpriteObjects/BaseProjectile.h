@@ -110,12 +110,11 @@ private:
 	FWeaponData** WeaponData;
 
 	inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
-		UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
+		//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
 		if (OnEnemyHit.IsBound()) {
 			OnEnemyHit.Broadcast(_HitActor, _DamageAmount);
-			UE_LOG(LogTemp, Warning, TEXT("Broadcast hit: Bound = true"));
+			//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit: Bound = true"));
 		}
 	}
-
 	
 };

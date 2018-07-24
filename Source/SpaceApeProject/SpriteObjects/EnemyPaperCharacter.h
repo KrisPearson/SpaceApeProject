@@ -60,8 +60,8 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public ABasePaperCharacter
 
 public:
 	
-	UFUNCTION()
-		virtual void ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd);
+	//UFUNCTION()
+		//virtual void ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd);
 private:
 
 

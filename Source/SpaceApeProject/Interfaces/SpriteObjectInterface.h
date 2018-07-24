@@ -8,16 +8,16 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/ScriptMacros.h"
 #include "UObject/Interface.h"
-#include "SpriteCharacterInterface.generated.h"
+#include "SpriteObjectInterface.generated.h"
 
 
 
 UINTERFACE(Blueprintable)
-class USpriteCharacterInterface : public UInterface {
+class USpriteObjectInterface : public UInterface {
 	GENERATED_UINTERFACE_BODY()
 };
 
-class SPACEAPEPROJECT_API ISpriteCharacterInterface {
+class SPACEAPEPROJECT_API ISpriteObjectInterface {
 	GENERATED_IINTERFACE_BODY()
 
 public:
@@ -25,7 +25,7 @@ public:
 	//void Interact();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Sprite")
-	FVector GetCharacterFaceDirection() const ;
+	FVector GetObjectFaceDirection() const ;
 
 	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Character")
 	//bool DealDamage(class ABasePaperCharacter* CharacterToDamage, int _DamageAmount);

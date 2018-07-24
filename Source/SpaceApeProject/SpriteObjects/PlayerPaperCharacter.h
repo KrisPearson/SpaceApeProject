@@ -15,15 +15,15 @@
 //	H_None UMETA(DisplayName = "No Heading") = -1
 //};
 
-UENUM()
-enum class Heading {
-	H_East= 0,
-	H_North = 1,
-	H_West = 2,
-	H_South = 3,
-
-	H_None = 99
-};
+//UENUM()
+//enum class Heading {
+//	H_East= 0,
+//	H_North = 1,
+//	H_West = 2,
+//	H_South = 3,
+//
+//	H_None = 99
+//};
 
 
 //#include "Components/PlayerMovementComponent.h"
@@ -96,20 +96,6 @@ protected:
 
 
 
-	EFaceDirection LastUpdatedMovingDirection;
-
-
-
-	UFUNCTION()
-	void OnRep_ReplicatedShootingDirection();
-
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerModifyMoveDirection(ABasePaperCharacter* TargetedActor, EFaceDirection NewValue);
-	virtual bool ServerModifyMoveDirection_Validate(ABasePaperCharacter* TargetedActor, EFaceDirection NewValue) { return true; };
-	virtual void ServerModifyMoveDirection_Implementation(ABasePaperCharacter* TargetedActor, EFaceDirection NewValue) { TargetedActor->CurrentMovingDirection = NewValue; };
-
-
 
 
 
@@ -125,18 +111,17 @@ protected:
 	void ShootUp(float Value);
 	void ShootRight(float Value);
 
-	int CurrentHorizontalShootValue = 0;
-	int CurrentVerticalShootValue = 0;
+
 
 	float CurrentHorizontalMoveValue = 0;
 	float CurrentVerticalMoveValue = 0;
 
-	void ShootToHeading(Heading HeadingDirection);
+	void ShootInDirection(FVector Direction);
 
 	UFUNCTION(Reliable, Server, WithValidation)
-		void ServerShootToHeading(Heading HeadingDirection);
-	void ServerShootToHeading_Implementation(Heading HeadingDirection);
-	bool ServerShootToHeading_Validate(Heading HeadingDirection) { return true;  };
+		void ServerShootInDirection(FVector Direction);
+	void ServerShootInDirection_Implementation(FVector Direction);
+	bool ServerShootInDirection_Validate(FVector Direction) { return true;  };
 
 	void ShotTimerExpired();
 

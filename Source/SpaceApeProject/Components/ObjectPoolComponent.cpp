@@ -25,7 +25,7 @@ void UObjectPoolComponent::FillPool(TSubclassOf<AActor> _ActorToSpawn, int _Coun
 
 			SpawnActorForPool(_ActorToSpawn);
 
-			UE_LOG(LogTemp, Warning, TEXT(" Adding Object to Pool"));
+			//UE_LOG(LogTemp, Warning, TEXT(" Adding Object to Pool"));
 
 		}
 	}

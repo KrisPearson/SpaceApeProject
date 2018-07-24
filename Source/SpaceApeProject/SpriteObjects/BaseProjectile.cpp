@@ -128,7 +128,7 @@ void ABaseProjectile::ToggleEnabled(bool _value) {
 
 	if (_value) { // enable the projectile
 
-				  UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled true"));
+				 // UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled true"));
 
 		ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		ProjectileMesh->SetVisibility(true);
@@ -142,7 +142,7 @@ void ABaseProjectile::ToggleEnabled(bool _value) {
 	}
 	else { // disable the projectile
 
-		   UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled false"));
+		  // UE_LOG(LogTemp, Log, TEXT(" Projectile::Toggle enabled false"));
 
 		ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ProjectileMesh->SetVisibility(false);

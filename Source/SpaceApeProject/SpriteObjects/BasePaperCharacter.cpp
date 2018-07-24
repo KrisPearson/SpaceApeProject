@@ -10,15 +10,7 @@
 
 #include "SpriteObjects/BaseProjectile.h"
 
-void ABasePaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	//DOREPLIFETIME(APlayerPaperCharacter, bIsShooting);
-	DOREPLIFETIME(ABasePaperCharacter, CurrentMovingDirection);
-	DOREPLIFETIME(ABasePaperCharacter, CurrentShootingDirection);
-	DOREPLIFETIME(ABasePaperCharacter, CurrentHealthPoints);
-}
-
-
+#include "Kismet/GameplayStatics.h"
 
 
 
@@ -29,6 +21,24 @@ ABasePaperCharacter::ABasePaperCharacter() {
 	AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
 
 	ProjectilePool = CreateDefaultSubobject<UObjectPoolComponent>(TEXT("ProjectilePool"));
+
+	//if (HasAuthority()) {
+	//	this->SetReplicates(true);
+	//}
+
+	bReplicates = true;
+}
+
+
+void ABasePaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABasePaperCharacter, bIsShooting);
+	//DOREPLIFETIME(ABasePaperCharacter, CurrentMovingDirection);
+	DOREPLIFETIME(ABasePaperCharacter, CurrentShootingDirection);
+	DOREPLIFETIME(ABasePaperCharacter, CurrentHealthPoints);
+
+	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::GetLifetimeReplicatedProps"));
 }
 
 void ABasePaperCharacter::BeginPlay() {
@@ -56,6 +66,44 @@ void ABasePaperCharacter::BeginPlay() {
 	}
 }
 
+void ABasePaperCharacter::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
+	UpdateFaceDirection();
+	
+	UpdateIsShooting();
+
+
+	//if (Role == ROLE_Authority) {
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_Authority")));
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
+	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
+	//}
+	//else if (Role == ROLE_AutonomousProxy) {
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_AutonomousProxy")));
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
+	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
+	//}
+	//else if (Role == ROLE_SimulatedProxy) {
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_SimulatedProxy")));
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
+	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
+	//}
+
+}
+//
+//void ABasePaperCharacter::SetIsShooting(bool newValue) {
+//
+//	bIsShooting = newValue;
+//
+//	if (bIsShooting) {
+//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_Authority =: %s for %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
+//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_AutonomousProxy =: %s for %s"), Role == ROLE_AutonomousProxy ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
+//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_SimulatedProxy =: %s for %s"), Role == ROLE_SimulatedProxy ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
+//	}
+//}
+
+
 
 /*
 This will be used primarily for weapon pickups.
@@ -78,30 +126,79 @@ void ABasePaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewWea
 		EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
 		FireSound = EquippedWeaponComponent->GetFireSound();
 
+
+
 		//FWeaponData NewWeaponData = EquippedWeaponComponent->GetWeaponData();
 		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
 	}
 
 }
 
+void ABasePaperCharacter::UpdateFaceDirection() {
+
+	FVector CurrentVelocity = GetVelocity();
+	CurrentVelocity.Normalize();
+	//UE_LOG(LogTemp, Warning, TEXT("Player Velocity  =  %f , %f, %f"), GetVelocity().X, GetVelocity().Y, GetVelocity().Z);
+	//UE_LOG(LogTemp, Warning, TEXT("CurrentVelocity  =  %f , %f, %f"), CurrentVelocity.X, CurrentVelocity.Y, CurrentVelocity.Z);
+
+	if (CurrentVelocity.SizeSquared() == 0) {
+		// use last face direction
+		if (bIsShooting) FaceDirectionVector = CurrentShootingDirection;
+		return;
+	}
+	else if (FMath::Abs(CurrentVelocity.X) > FMath::Abs(CurrentVelocity.Y)) {
+		// Vertical axis
+		if (CurrentVelocity.X > 0) {
+			//CurrentMovingDirection = EFaceDirection::FD_Up;
+			FaceDirectionVector = SpriteDirection::Up;
+		}
+		else {
+			//CurrentMovingDirection = EFaceDirection::FD_Down;
+			FaceDirectionVector = SpriteDirection::Down;
+		}
+	}
+	else {
+		//Horizontal axis
+		if (CurrentVelocity.Y > 0) {
+			//CurrentMovingDirection = EFaceDirection::FD_Right;
+			FaceDirectionVector = SpriteDirection::Right;
+		}
+		else {
+			//CurrentMovingDirection = EFaceDirection::FD_Left;
+			FaceDirectionVector = SpriteDirection::Left;
+		}
+	}
+}
+
+/* Establishes whether the character is shooting and, if so, replicates the bIsShooting property across to all players */
+void ABasePaperCharacter::UpdateIsShooting() {
+	if (IsLocallyControlled()) { // Only update if the character is owned by this player
+		const bool newBIsShooting = CurrentHorizontalShootValue != 0 || CurrentVerticalShootValue != 0;
+		if (newBIsShooting != bIsShooting) {
+			bIsShooting = newBIsShooting; // Local update to prevent latency causing firing after input is realeased
+			if (HasAuthority()) MulticastSetIsShooting(newBIsShooting); // Server player
+			else if (Role == ROLE_AutonomousProxy) ServerSetIsShooting(newBIsShooting); // Client Player		
+		}
+	}
+}
+
+
 
 #pragma region CharacterInterface Methods 
 
 void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
 
-	ISpriteCharacterInterface* CharacterInterface = Cast<ISpriteCharacterInterface>(ActorToDamage);
+	ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(ActorToDamage);
 	 
-	if (CharacterInterface) {
+	if (ObjectInterface) {
 
-
-		ISpriteCharacterInterface::Execute_RecieveDamage(ActorToDamage, DamageAmount);
-
-		//CharacterInterface->Execute_RecieveDamage(_DamageAmount);
+		ISpriteObjectInterface::Execute_RecieveDamage(ActorToDamage, DamageAmount);
 
 	}
 }
 
-FVector ABasePaperCharacter::GetCharacterFaceDirection_Implementation() const {
+FVector ABasePaperCharacter::GetObjectFaceDirection_Implementation() const {
+
 	return FaceDirectionVector;
 }
 
@@ -115,8 +212,8 @@ bool ABasePaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
 	return true;
 }
 
-//FVector ABasePaperCharacter::GetCharacterFaceDirection_Implementation() const {
-//	check(0 && "GetCharacterFaceDirection_Implementation method requires override  method")
+//FVector ABasePaperCharacter::GetObjectFaceDirection_Implementation() const {
+//	check(0 && "GetObjectFaceDirection_Implementation method requires override  method")
 //	return FVector();
 //}
 

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PaperCharacter.h"
-#include "Interfaces/SpriteCharacterInterface.h"
+#include "Interfaces/SpriteObjectInterface.h"
 #include "BasePaperCharacter.generated.h"
 
 
@@ -17,11 +17,18 @@ enum class EFaceDirection : uint8 {
 };
 
 
-/**
- * 
- */
+extern float CameraAngle;
+
+namespace SpriteDirection {
+	extern FVector Up;
+	extern FVector Down;
+	extern FVector Right;
+	extern FVector Left;
+}
+
+
 UCLASS()
-class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteCharacterInterface
+class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteObjectInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +40,8 @@ protected:
 
 
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
 
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -76,60 +85,89 @@ protected:
 
 	virtual void HandleMovement(float DeltaTime) { check(0 && "HandleMovement method requires override  method") };
 
+	void UpdateFaceDirection();
 
-	UPROPERTY(Replicated)
-		EFaceDirection CurrentShootingDirection; // TODO: Move to state machine
 
-	bool bIsShooting = false;
+	class UObjectPoolComponent* ProjectilePool;
+
 
 	UPROPERTY(Replicated)
 		int CurrentHealthPoints;
 
+	UPROPERTY(Replicated)
+		FVector CurrentShootingDirection;
 
-	class UObjectPoolComponent* ProjectilePool;
+	UFUNCTION(Reliable, Server, WithValidation)
+		void ServerSetCurrentShootingDirection(FVector NewDirection);
+	bool ServerSetCurrentShootingDirection_Validate(FVector NewDirection) { return true;  };
+	void ServerSetCurrentShootingDirection_Implementation(FVector NewDirection) { CurrentShootingDirection = NewDirection;  };
+
+
+
+	UPROPERTY(Replicated)
+		FVector CurrentMovingDirection;
+
+	int CurrentHorizontalShootValue = 0;
+	int CurrentVerticalShootValue = 0;
+
+	void UpdateIsShooting();
+
+	UPROPERTY(Replicated)
+	bool bIsShooting;
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerSetIsShooting(bool newValue);
+	bool ServerSetIsShooting_Validate(bool NewValue) { return true; };
+	void ServerSetIsShooting_Implementation(bool NewValue) { 
+		if (NewValue) {
+			UE_LOG(LogTemp, Warning, TEXT("ServerSetIsShooting_Implementation == true"));
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("ServerSetIsShooting_Implementation == false"));
+		}
+			bIsShooting = NewValue; 
+	};
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetIsShooting(bool NewValue);
+	void MulticastSetIsShooting_Implementation(bool NewValue) { bIsShooting = NewValue;  };
+
+
+	//UFUNCTION(Server, Reliable, WithValidation)
+	//	void ServerModifyMoveDirection(ABasePaperCharacter* TargetedActor, FVector NewValue);
+	//virtual bool ServerModifyMoveDirection_Validate(ABasePaperCharacter* TargetedActor, FVector NewValue) { return true; };
+	//virtual void ServerModifyMoveDirection_Implementation(ABasePaperCharacter* TargetedActor, FVector NewValue) { TargetedActor->CurrentMovingDirection = NewValue; };
+
+	//FVector LastUpdatedMovingDirection;
+
+	//UFUNCTION(Server, Reliable, WithValidation)
+	//	void ServerModifyIsShooting(ABasePaperCharacter* TargetedActor, bool NewValue);
+	//virtual bool ServerModifyIsShooting_Validate(ABasePaperCharacter* TargetedActor, bool NewValue) { return true; };
+	//virtual void ServerModifyIsShooting_Implementation(ABasePaperCharacter* TargetedActor, bool NewValue) { TargetedActor->bIsShooting = NewValue; };
+
 
 	FVector FaceDirectionVector;
 
 public:
 
 
-	UPROPERTY(Replicated)
-		EFaceDirection CurrentMovingDirection;// TODO: Move to state machine
-
-
-
 	inline bool GetIsShooting() { return bIsShooting; }
 
 
-	inline EFaceDirection GetCurrentShootingDirection() { return CurrentShootingDirection; }
+	inline FVector GetCurrentShootingDirection() { return CurrentShootingDirection; }
 
-	inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
+	//inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
 
 
 	UFUNCTION()
 	virtual void DealDamage(class AActor* ActorToDamage, int DamageAmount);
 
-#pragma region CharacterInterface Methods 
+#pragma region Interface Methods 
 
-	//ISpriteCharacterInterface method
-	virtual FVector GetCharacterFaceDirection_Implementation() const override;
-
-
-	//virtual bool DealDamage_Implementation(class ABasePaperCharacter* CharacterToDamage, int _DamageAmount);
+	virtual FVector GetObjectFaceDirection_Implementation() const override;
 
 	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
 
 #pragma endregion
 
-private:
-
-
-
-
-
-
-	//UPROPERTY(ReplicatedUsing = OnRep_ReplicatedShootingDirection)
-	//EFaceDirection ReplicatedShootingDirection; // TODO: Move to state machine
-
-	
 };

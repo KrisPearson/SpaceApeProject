@@ -12,6 +12,7 @@ based upon the state of the component's owning Character.
 #include "PaperCharacterAnimationComponent.h"
 #include "PaperFlipbookComponent.h"
 
+
 #include "SpriteObjects/BasePaperCharacter.h" // TODO: Use a base class shared by all paper characters
 
 
@@ -62,68 +63,130 @@ void UPaperCharacterAnimationComponent::UpdateAnimation() {
 
 #pragma region Animation Conditions
 	if (OwningCharacter != nullptr) {
+
+		FVector FaceDirection;
+		ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(OwningCharacter);
+		if (ObjectInterface) FaceDirection = ISpriteObjectInterface::Execute_GetObjectFaceDirection(OwningCharacter);
+
+		FVector ShootDirection = OwningCharacter->GetCurrentShootingDirection();
+
 		if (OwningCharacter->GetIsShooting()) { // Shooting Animation
-						   //UE_LOG(LogTemp, Warning, TEXT("bIsShooting "));
-			switch (OwningCharacter->GetCurrentShootingDirection()) {
-			case EFaceDirection::FD_Left:
-				if (bIsMoving) DesiredAnimation = WalkLeftFlipbook;
-				else DesiredAnimation = IdleLeftFlipbook;
-				break;
-			case EFaceDirection::FD_Right:
-				if (bIsMoving) DesiredAnimation = WalkRightFlipbook;
-				else DesiredAnimation = IdleRightFlipbook;
-				break;
-			case EFaceDirection::FD_Up:
+			UE_LOG(LogTemp, Warning, TEXT("Shooting Animation %s"), *(OwningCharacter->GetFName().ToString()) );
+			if (ShootDirection == SpriteDirection::Up) {
+				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Up "));
 				if (bIsMoving) DesiredAnimation = WalkUpFlipbook;
 				else DesiredAnimation = IdleUpFlipbook;
-				break;
-			case EFaceDirection::FD_Down:
+			}
+			else if (ShootDirection == SpriteDirection::Down) {
+				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Down "));
 				if (bIsMoving) DesiredAnimation = WalkDownFlipbook;
 				else DesiredAnimation = IdleDownFlipbook;
-				break;
-			default:
-				UE_LOG(LogTemp, Warning, TEXT("bIsShooting switch FAILED"));
-				break;
+			}
+			else if (ShootDirection == SpriteDirection::Left) {
+				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Left"));
+				if (bIsMoving) DesiredAnimation = WalkLeftFlipbook;
+				else DesiredAnimation = IdleLeftFlipbook;
+			}
+			else if (ShootDirection == SpriteDirection::Right) {
+				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Right"));
+				if (bIsMoving) DesiredAnimation = WalkRightFlipbook;
+				else DesiredAnimation = IdleRightFlipbook;
 			}
 		}
-		else if (bIsMoving) { //Walking Animation
-			switch (OwningCharacter->GetCurrentMovingDirection()) {
-			case EFaceDirection::FD_Left:
-				DesiredAnimation = WalkLeftFlipbook;
-				break;
-			case EFaceDirection::FD_Right:
-				DesiredAnimation = WalkRightFlipbook;
-				break;
-			case EFaceDirection::FD_Up:
+		else if (bIsMoving) { // Walking Animation
+			//if (GetOwner()->Role > ROLE_Authority)  UE_LOG(LogTemp, Warning, TEXT("Walking Animation %s"), *(OwningCharacter->GetFName().ToString()) );
+			if (FaceDirection == SpriteDirection::Up) {
 				DesiredAnimation = WalkUpFlipbook;
-				break;
-			case EFaceDirection::FD_Down:
+			}
+			else if (FaceDirection == SpriteDirection::Down) {
 				DesiredAnimation = WalkDownFlipbook;
-				break;
-			default:
-				UE_LOG(LogTemp, Warning, TEXT("bIsMoving switch FAILED"));
-				break;
+			}
+			else if (FaceDirection == SpriteDirection::Left) {
+				DesiredAnimation = WalkLeftFlipbook;
+			}
+			else if (FaceDirection == SpriteDirection::Right) {
+				DesiredAnimation = WalkRightFlipbook;
 			}
 		}
 		else { // Idle animation
-			switch (OwningCharacter->GetCurrentMovingDirection()) {
-			case EFaceDirection::FD_Left:
-				DesiredAnimation = IdleLeftFlipbook;
-				break;
-			case EFaceDirection::FD_Right:
-				DesiredAnimation = IdleRightFlipbook;
-				break;
-			case EFaceDirection::FD_Up:
+			//UE_LOG(LogTemp, Warning, TEXT("Idle animation %s"), *(OwningCharacter->GetFName().ToString()) );
+			if (FaceDirection == SpriteDirection::Up) {
 				DesiredAnimation = IdleUpFlipbook;
-				break;
-			case EFaceDirection::FD_Down:
+			}
+			else if (FaceDirection == SpriteDirection::Down) {
 				DesiredAnimation = IdleDownFlipbook;
-				break;
-			default:
-				UE_LOG(LogTemp, Warning, TEXT("Idle switch FAILED"));
-				break;
+			}
+			else if (FaceDirection == SpriteDirection::Left) {
+				DesiredAnimation = IdleLeftFlipbook;
+			}
+			else if (FaceDirection == SpriteDirection::Right) {
+				DesiredAnimation = IdleRightFlipbook;
 			}
 		}
+
+
+		//if (OwningCharacter->GetIsShooting()) { // Shooting Animation
+		//	
+		//	switch (OwningCharacter->GetCurrentShootingDirection()) {
+		//	case EFaceDirection::FD_Left:
+		//		if (bIsMoving) DesiredAnimation = WalkLeftFlipbook;
+		//		else DesiredAnimation = IdleLeftFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Right:
+		//		if (bIsMoving) DesiredAnimation = WalkRightFlipbook;
+		//		else DesiredAnimation = IdleRightFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Up:
+		//		if (bIsMoving) DesiredAnimation = WalkUpFlipbook;
+		//		else DesiredAnimation = IdleUpFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Down:
+		//		if (bIsMoving) DesiredAnimation = WalkDownFlipbook;
+		//		else DesiredAnimation = IdleDownFlipbook;
+		//		break;
+		//	default:
+		//		UE_LOG(LogTemp, Warning, TEXT("bIsShooting switch FAILED"));
+		//		break;
+		//	}
+		//}
+		//else if (bIsMoving) { //Walking Animation
+		//	switch (OwningCharacter->GetCurrentMovingDirection()) {
+		//	case EFaceDirection::FD_Left:
+		//		DesiredAnimation = WalkLeftFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Right:
+		//		DesiredAnimation = WalkRightFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Up:
+		//		DesiredAnimation = WalkUpFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Down:
+		//		DesiredAnimation = WalkDownFlipbook;
+		//		break;
+		//	default:
+		//		UE_LOG(LogTemp, Warning, TEXT("bIsMoving switch FAILED"));
+		//		break;
+		//	}
+		//}
+		//else { // Idle animation
+		//	switch (OwningCharacter->GetCurrentMovingDirection()) {
+		//	case EFaceDirection::FD_Left:
+		//		DesiredAnimation = IdleLeftFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Right:
+		//		DesiredAnimation = IdleRightFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Up:
+		//		DesiredAnimation = IdleUpFlipbook;
+		//		break;
+		//	case EFaceDirection::FD_Down:
+		//		DesiredAnimation = IdleDownFlipbook;
+		//		break;
+		//	default:
+		//		UE_LOG(LogTemp, Warning, TEXT("Idle switch FAILED"));
+		//		break;
+		//	}
+		//}
 #pragma endregion
 
 		//UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.0f) ? RunningAnimation : IdleAnimation;
