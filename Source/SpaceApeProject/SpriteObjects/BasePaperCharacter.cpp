@@ -7,6 +7,9 @@
 #include "Components/ObjectPoolComponent.h"
 #include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/SpriteShadowComponent.h"
+#include "PaperFlipbookComponent.h"
+
+#include "Materials/MaterialInstance.h"
 
 #include "SpriteObjects/BaseProjectile.h"
 
@@ -22,9 +25,15 @@ ABasePaperCharacter::ABasePaperCharacter() {
 
 	ProjectilePool = CreateDefaultSubobject<UObjectPoolComponent>(TEXT("ProjectilePool"));
 
-	//if (HasAuthority()) {
-	//	this->SetReplicates(true);
-	//}
+	PivotComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComponent"));
+	PivotComponent->SetupAttachment(RootComponent);
+	PivotComponent->SetRelativeLocation(FVector(30, 0, -50));
+	GetSprite()->SetupAttachment(PivotComponent);
+
+	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::ABasePaperCharacter()"));
+
+
+	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CameraAngle));
 
 	bReplicates = true;
 }
@@ -64,6 +73,20 @@ void ABasePaperCharacter::BeginPlay() {
 			Cast<ABaseProjectile>(Actor)->SetPoolReference(ProjectilePool);
 		}
 	}
+
+	UMaterialInstance* BaseMat = static_cast<UMaterialInstance*>(GetSprite()->GetMaterial(0));
+
+	//Create a dynamic material in order to enable access to the damage flicker scaler parameter.
+	if (BaseMat != nullptr) {
+		DynamicSpriteMaterial = UMaterialInstanceDynamic::Create(BaseMat, this);
+		GetSprite()->SetMaterial(0, DynamicSpriteMaterial);
+
+	}
+
+	// Set the health points the class uses during play to the value of the character's default health points.
+	CurrentHealthPoints = HealthPoints;
+
+
 }
 
 void ABasePaperCharacter::Tick(float DeltaTime) {
@@ -184,6 +207,61 @@ void ABasePaperCharacter::UpdateIsShooting() {
 
 
 
+/*
+Tells the material to flicker, following the enemy recieving damage.
+Called on server, and runs on server and all clients.
+*/
+void ABasePaperCharacter::MulticastPlayDamageFlash_Implementation() {
+	if (DynamicSpriteMaterial != nullptr) {
+		if (World != nullptr) {
+			// Send the current time to the material, which will then handle the duration of the flicker.
+			// This approach means that the material's scaler value only needs to be set once, rather than updated by the AEnemy class each frame, or via Timer.
+			DynamicSpriteMaterial->SetScalarParameterValue(FName("StartTime"), World->GetTimeSeconds());
+		}
+		else UE_LOG(LogTemp, Warning, TEXT(" Warning: World = Null"));
+	}
+	else  UE_LOG(LogTemp, Warning, TEXT(" Warning: DynamicEnemyMaterial = Null"));
+}
+
+/*
+A check to see whether the enemy has health points remianing.
+*/
+bool ABasePaperCharacter::CheckIfAlive() {
+	if (CurrentHealthPoints > 0) {
+		return true;
+	}
+	else return false;
+}
+
+/*
+Destroy this actor following a broadcast to the WaveManager.
+*/
+void ABasePaperCharacter::CharacterDeath() {
+	//SpawnPickup(); 
+	CharacterDeathDelegate.Broadcast(this);
+	Destroy();
+}
+
+bool ABasePaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
+
+	CurrentHealthPoints -= DamageAmount;
+
+	if (!CheckIfAlive())
+	{
+		CharacterDeath();
+	}
+	else {
+		MulticastPlayDamageFlash();
+	}
+
+	return true;
+
+}
+
+
+
+
+
 #pragma region CharacterInterface Methods 
 
 void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
@@ -202,15 +280,6 @@ FVector ABasePaperCharacter::GetObjectFaceDirection_Implementation() const {
 	return FaceDirectionVector;
 }
 
-bool ABasePaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
-
-	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::RecieveDamage_Implementation"));
-
-
-	CurrentHealthPoints -= DamageAmount;
-
-	return true;
-}
 
 //FVector ABasePaperCharacter::GetObjectFaceDirection_Implementation() const {
 //	check(0 && "GetObjectFaceDirection_Implementation method requires override  method")

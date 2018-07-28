@@ -8,6 +8,8 @@
 #include "BasePaperCharacter.generated.h"
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDeath, ABasePaperCharacter*, CharacterReference);
+
 UENUM(BlueprintType)
 enum class EFaceDirection : uint8 {
 	FD_Left UMETA(DisplayName = "Face Left"),
@@ -66,12 +68,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Stats, meta = (ClampMin = "10", ClampMax = "1000"))
 		int HealthPoints = 10;
 
+	UPROPERTY()
+	USceneComponent* PivotComponent;
+
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
 		class USoundBase* FireSound; // TODO: Move to AudioHandler
 	
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
+		class USoundBase* HitSound; // TODO: Move to AudioHandler
 
 
 	UPROPERTY()
@@ -169,5 +175,24 @@ public:
 	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
 
 #pragma endregion
+
+	UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
+		FOnCharacterDeath CharacterDeathDelegate;
+
+protected:
+
+
+	class UMaterialInstanceDynamic* DynamicSpriteMaterial;
+
+	UFUNCTION(NetMulticast, reliable)
+		void MulticastPlayDamageFlash();
+	void MulticastPlayDamageFlash_Implementation();
+
+
+
+	UFUNCTION()
+		void CharacterDeath();
+
+		bool CheckIfAlive();
 
 };

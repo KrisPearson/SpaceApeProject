@@ -37,8 +37,9 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public ABasePaperCharacter
 {
 	GENERATED_BODY()
 
+	APlayerPaperCharacter();
 
-	
+
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
@@ -131,10 +132,6 @@ protected:
 
 	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
 
-
-
-public:
-	APlayerPaperCharacter();
 
 
 

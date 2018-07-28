@@ -72,16 +72,10 @@ const FName APlayerPaperCharacter::FireRightBinding("ShootHorizontalAxis");
 
 APlayerPaperCharacter::APlayerPaperCharacter() {
 
-	// Rotate the Sprite to face the negative X direction and tilt up to face the camera
-	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CameraAngle));
-	GetSprite()->AddLocalOffset(FVector(10, 0, 0));
-
 	// Enable replication on the Sprite component so animations show up when networked
 	//GetSprite()->SetIsReplicated(true);
 
 	GetCapsuleComponent()->SetCollisionProfileName("Player");
-
-
 
 	// Create a camera boom attached to the root (capsule) 
 	CameraBoomComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -105,7 +99,7 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
-
+	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CameraAngle));
 
 	CameraController = CreateDefaultSubobject<UPlayerCameraControllerComponent>(TEXT("CameraController"));
 	CameraController->SetBoomReference(*CameraBoomComponent);

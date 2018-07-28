@@ -71,24 +71,20 @@ void UPaperCharacterAnimationComponent::UpdateAnimation() {
 		FVector ShootDirection = OwningCharacter->GetCurrentShootingDirection();
 
 		if (OwningCharacter->GetIsShooting()) { // Shooting Animation
-			UE_LOG(LogTemp, Warning, TEXT("Shooting Animation %s"), *(OwningCharacter->GetFName().ToString()) );
+			//UE_LOG(LogTemp, Warning, TEXT("Shooting Animation %s"), *(OwningCharacter->GetFName().ToString()) );
 			if (ShootDirection == SpriteDirection::Up) {
-				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Up "));
 				if (bIsMoving) DesiredAnimation = WalkUpFlipbook;
 				else DesiredAnimation = IdleUpFlipbook;
 			}
 			else if (ShootDirection == SpriteDirection::Down) {
-				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Down "));
 				if (bIsMoving) DesiredAnimation = WalkDownFlipbook;
 				else DesiredAnimation = IdleDownFlipbook;
 			}
 			else if (ShootDirection == SpriteDirection::Left) {
-				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Left"));
 				if (bIsMoving) DesiredAnimation = WalkLeftFlipbook;
 				else DesiredAnimation = IdleLeftFlipbook;
 			}
 			else if (ShootDirection == SpriteDirection::Right) {
-				UE_LOG(LogTemp, Warning, TEXT("SpriteDirection::Right"));
 				if (bIsMoving) DesiredAnimation = WalkRightFlipbook;
 				else DesiredAnimation = IdleRightFlipbook;
 			}

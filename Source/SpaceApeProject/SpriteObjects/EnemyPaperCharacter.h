@@ -55,9 +55,6 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public ABasePaperCharacter
 	UFUNCTION()
 		inline int GetSpawnCost() { return SpawnCost;  };
 
-	UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
-		FOnEnemyDeath EnemyDeathDelegate;
-
 public:
 	
 	//UFUNCTION()
@@ -67,28 +64,15 @@ private:
 
 
 	UWorld* World;
-	
-	class UMaterialInstanceDynamic* DynamicEnemyMaterial;
+
 
 	//FTimerHandle DamageFlashTimerHandle;
 
 	//UPROPERTY(EditAnywhere, Category = Behaviour)
 		//class UBehaviorTree* BotBehavior;
 	
-	bool CheckIfAlive();
-
-protected:
-
-	UFUNCTION(NetMulticast, reliable)
-		void MulticastPlayDamageFlash();
-	void MulticastPlayDamageFlash_Implementation();
 
 
 
-	UFUNCTION()
-		void EnemyDeath();
-
-
-
-	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
+	//virtual bool RecieveDamage_Implementation(int DamageAmount) override;
 };
