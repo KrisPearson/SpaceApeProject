@@ -68,7 +68,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Stats, meta = (ClampMin = "10", ClampMax = "1000"))
 		int HealthPoints = 10;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
 	USceneComponent* PivotComponent;
 
 

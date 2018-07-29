@@ -6,7 +6,7 @@
 #include "SpriteObjects/BasePaperCharacter.h"
 #include "EnemyPaperCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeath, AEnemyPaperCharacter*, EnemyPointer);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeath, AEnemyPaperCharacter*, EnemyPointer);
 
 /**
  * 

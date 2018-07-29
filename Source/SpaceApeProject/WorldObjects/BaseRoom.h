@@ -4,7 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+//#include "SpriteObjects/PlayerPaperCharacter.h"
 #include "BaseRoom.generated.h"
+
+
+
+
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerEnter, class ABasePaperCharacter*, CharacterPointer);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterEnter, class ABasePaperCharacter*, EnteringCharacter, int32, NumPlayerCharactersInRoom);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCharacterExit, class ABasePaperCharacter*, EnteringCharacter, int32, NumPlayerCharactersInRoom);
 
 UCLASS()
 class SPACEAPEPROJECT_API ABaseRoom : public AActor
@@ -17,6 +25,13 @@ class SPACEAPEPROJECT_API ABaseRoom : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ABaseRoom();
+
+
+	FOnCharacterEnter OnCharacterEnterDelegate;
+
+	FOnCharacterExit OnCharacterExitDelegate;
+
+	TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
 
 protected:
 	// Called when the game starts or when spawned

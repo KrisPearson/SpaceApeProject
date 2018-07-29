@@ -9,7 +9,8 @@
 
 UENUM(BlueprintType)		//"BlueprintType" is essential to include
 enum class ESpawnBehaviour : uint8 {
-	SB_OneTime UMETA(DisplayName = "OneTimeOnly"), // Will only spawn a single character once during a playthrough (useful for bosses)
+	SB_OnRequest UMETA(DisplayName = "OnRequest"), // Will not automatically spawn characters, but instead requires the spawn function to be called.
+	SB_OneTime UMETA(DisplayName = "OneTimeOnly"), // Will only spawn a single character once during a playthrough (useful for boss-like enemies)
 	SB_EveryTime UMETA(DisplayName = "EveryTime"), // Spawns a character each time a room is entered, then destroys them on exit
 	SB_Continuous UMETA(DisplayName = "Continuous") // Continuously spawns characters until a predifined limit is met whilst the player is in the room
 };
@@ -24,8 +25,8 @@ public:
 	// Sets default values for this component's properties
 	UBaseSpawnComponent();
 
-	//UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Spawning")
-		//TSubclassOf<ABasePaperCharacter> TypeToSpawn;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Spawning")
+		TSubclassOf<ABasePaperCharacter> DefaultSpawnType;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Spawning")
 		ESpawnBehaviour SpawnBehaviour;
@@ -43,6 +44,11 @@ protected:
 
 	TArray<ABasePaperCharacter*> SpawnedCharactersArray;
 
+
+	virtual void HandleSpawnBehaviour(bool bEndBehaviour);
+
+	// virtual void HandleVisuals(); 
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -51,16 +57,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
 		void SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeToSpawn);
 
+	UFUNCTION(BlueprintCallable, Category = "Spawning")
+		void DestroySpawnedCharacters();
+
 	class UBillboardComponent* BillboardComponent;
 
 
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
-		void SetIsDisables(bool bIsDisabled) { this->bIsDisabled = bIsDisabled; };
+	void SetSpawningDisabled(bool bIsDisabled) {
+		this->bIsDisabled = bIsDisabled; 
+	};
 
 
 
 private:
 
+	UFUNCTION()
 	void RegisterCharacterDeath(ABasePaperCharacter* DeadCharacterRef);
 	// TODO: Bind event to enemy death. Call blueprint event too.
+
+	UFUNCTION()
+	void RegisterCharacterEnterRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
+
+	UFUNCTION()
+	void RegisterCharacterExitRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
+
+	class ABaseRoom* OwningRoom;
 };

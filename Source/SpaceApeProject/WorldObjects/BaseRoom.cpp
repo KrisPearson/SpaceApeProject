@@ -65,21 +65,43 @@ void ABaseRoom::Tick(float DeltaTime) {
 /*The intended use of this method is to detect the player character entering the room, at which point the room will initiate its event sequence. */
 void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult) {
 	
-	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
 
-		auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-		if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
-		//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
+	if (OtherActor->IsA(ABasePaperCharacter::StaticClass()) )  {
 
-		OnRunRoomEvents();
+		if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
+
+			if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
+				PlayerCharactersInRoom.Add(Character);
+				OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
+			}
+			
+
+			auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
+			//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
+
+			OnRunRoomEvents();
+		}
 	}
+
+
 }
 
 void ABaseRoom::OnComponentExitRoom(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
-		// TODO: turn off lights
+	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
 
-		//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(nullptr);
+		if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
+			if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
+				PlayerCharactersInRoom.Remove(Character);
+				OnCharacterExitDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
+			}
+
+			//auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+			//if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
+			//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
+
+			//OnRunRoomEvents();
+		}
 	}
 }
 

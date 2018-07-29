@@ -33,7 +33,7 @@ void UPaperCharacterAnimationComponent::BeginPlay()
 	Super::BeginPlay();
 
 
-	OwningCharacter = Cast<ABasePaperCharacter>(GetOwner()); // TODO: Derrive characters from same base!
+	OwningCharacter = Cast<ABasePaperCharacter>(GetOwner());
 
 	
 }

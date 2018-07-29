@@ -27,13 +27,11 @@ ABasePaperCharacter::ABasePaperCharacter() {
 
 	PivotComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComponent"));
 	PivotComponent->SetupAttachment(RootComponent);
-	PivotComponent->SetRelativeLocation(FVector(30, 0, -50));
+	PivotComponent->SetRelativeLocation(FVector(30, 0, -90));
 	GetSprite()->SetupAttachment(PivotComponent);
+	GetSprite()->SetRelativeRotation(FRotator(00.f, 90.f, CameraAngle));
+	GetSprite()->SetRelativeLocation(FVector(40.f, 0.f, 30.f));
 
-	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::ABasePaperCharacter()"));
-
-
-	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CameraAngle));
 
 	bReplicates = true;
 }
@@ -47,7 +45,6 @@ void ABasePaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(ABasePaperCharacter, CurrentShootingDirection);
 	DOREPLIFETIME(ABasePaperCharacter, CurrentHealthPoints);
 
-	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::GetLifetimeReplicatedProps"));
 }
 
 void ABasePaperCharacter::BeginPlay() {

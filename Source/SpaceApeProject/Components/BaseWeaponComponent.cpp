@@ -39,6 +39,8 @@ void UBaseWeaponComponent::BeginPlay() {
 	World = GetWorld();
 	OwningCharacter = Cast<APlayerPaperCharacter>(GetOwner());
 
+	
+
 	if (OwningCharacter) {
 		WeaponData = FWeaponData(
 			ProjectileParticle,
@@ -50,6 +52,8 @@ void UBaseWeaponComponent::BeginPlay() {
 			Speed
 		);
 	};
+
+	UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
 }
 
 // Called every frame

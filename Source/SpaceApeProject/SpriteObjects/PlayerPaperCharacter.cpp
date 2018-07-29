@@ -274,7 +274,7 @@ void APlayerPaperCharacter::ShootInDirection(FVector Direction) {
 			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
 
 			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, 0.4f /*EquippedWeaponComponent->GetFireRate()*/);
+			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate() );
 		}
 		if (FireSound != nullptr) {
 			MulticastPlayFireSound();
@@ -295,7 +295,7 @@ void APlayerPaperCharacter::ServerShootInDirection_Implementation(FVector Direct
 			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
 
 			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, 0.4f /*EquippedWeaponComponent->GetFireRate()*/);
+			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate());
 		}
 		if (FireSound != nullptr) {
 			MulticastPlayFireSound();

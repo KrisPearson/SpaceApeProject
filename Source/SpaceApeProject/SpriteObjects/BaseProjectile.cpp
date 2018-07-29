@@ -159,14 +159,14 @@ This is the intended method for firing the projectile from the weapon component.
 void ABaseProjectile::SetProjectileLocationAndDirection(FVector _Loc, FVector _Vel, bool _ToggleEnabled) {
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" SetProjectileLocationAndDirection. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
 	if (Role == ROLE_Authority) {
-		UE_LOG(LogTemp, Log, TEXT(" SetProjectileLocationAndDirection, %f %f  %f"), _Loc.X, _Loc.Y, _Loc.Z);
+		//UE_LOG(LogTemp, Log, TEXT(" SetProjectileLocationAndDirection, %f %f  %f"), _Loc.X, _Loc.Y, _Loc.Z);
 		MulticastSetLocationAndVelocityDirection(_Loc, _Vel, _ToggleEnabled);
 	}
 }
 
 void ABaseProjectile::PassNewWeaponData(FWeaponData _NewWeaponData, int _NewWeaponDataID) {
 
-	UE_LOG(LogTemp, Log, TEXT(" PassNewWeaponData old id = %d. new id = %d"), WeaponDataID, _NewWeaponDataID);
+	//UE_LOG(LogTemp, Log, TEXT(" PassNewWeaponData old id = %d. new id = %d"), WeaponDataID, _NewWeaponDataID);
 	if (Role == ROLE_Authority) {
 		WeaponDataID = _NewWeaponDataID;
 
@@ -182,7 +182,7 @@ void ABaseProjectile::PassNewWeaponData(FWeaponData _NewWeaponData, int _NewWeap
 
 void ABaseProjectile::MulticastAssignNewWeaponData_Implementation(FWeaponData _NewWeaponData) {
 
-	UE_LOG(LogTemp, Log, TEXT("MulticastAssignNewWeaponData_Implementation. Components Size = %d"), _NewWeaponData.ProjectileComponents.Num());
+	//UE_LOG(LogTemp, Log, TEXT("MulticastAssignNewWeaponData_Implementation. Components Size = %d"), _NewWeaponData.ProjectileComponents.Num());
 
 	ProjectileParticle->SetTemplate(_NewWeaponData.ProjectileParticleSystem);
 	HitEffectParticle->SetTemplate(_NewWeaponData.HitEffectParticleSystem);
