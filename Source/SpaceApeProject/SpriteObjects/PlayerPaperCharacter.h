@@ -126,8 +126,7 @@ protected:
 
 	void ShotTimerExpired();
 
-	UFUNCTION()
-		virtual void DealDamage( AActor* ActorToDamage, int DamageAmount) override;
+	virtual void DealDamage( AActor* ActorToDamage, int DamageAmount) override;
 
 
 	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
