@@ -34,14 +34,13 @@ ABaseRoom::ABaseRoom() {
 	CameraBounds->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	CameraBounds->SetupAttachment(RoomMesh);
 
-	RoomTriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Room Trigger Box"));
-	RoomTriggerBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	RoomTriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseRoom::OnComponentEnterRoom);
-	RoomTriggerBox->OnComponentEndOverlap.AddDynamic(this, &ABaseRoom::OnComponentExitRoom);
-	RoomTriggerBox->SetupAttachment(RoomMesh);
+	RoomBounds = CreateDefaultSubobject<UBoxComponent>(TEXT("Room Bounds Box"));
+	RoomBounds->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	RoomBounds->OnComponentBeginOverlap.AddDynamic(this, &ABaseRoom::OnComponentEnterRoom);
+	RoomBounds->OnComponentEndOverlap.AddDynamic(this, &ABaseRoom::OnComponentExitRoom);
+	RoomBounds->SetupAttachment(RoomMesh);
 
 	PrimaryActorTick.bCanEverTick = false;
-
 }
 
 // Called when the game starts or when spawned
@@ -52,8 +51,8 @@ void ABaseRoom::BeginPlay() {
 	//define the trigger box and camera bounds for the room
 	FVector RoomDimensions = RoomMesh->GetStaticMesh()->GetBounds().GetBox().GetSize();
 	RoomDimensions = RoomDimensions / 2;
-	if (RoomTriggerBox != nullptr) RoomTriggerBox->SetBoxExtent(RoomDimensions);
-	if (CameraBounds !=  nullptr) CameraBounds->SetBoxExtent(RoomDimensions * 0.5f);
+	if (RoomBounds != nullptr) RoomBounds->SetBoxExtent(RoomDimensions * 0.7f);
+	if (CameraBounds !=  nullptr) CameraBounds->SetBoxExtent(RoomDimensions * 0.7f);
 }
 
 
@@ -64,44 +63,43 @@ void ABaseRoom::Tick(float DeltaTime) {
 
 /*The intended use of this method is to detect the player character entering the room, at which point the room will initiate its event sequence. */
 void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult) {
-	
-
-	if (OtherActor->IsA(ABasePaperCharacter::StaticClass()) )  {
-
-		if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
-
-			if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
-				PlayerCharactersInRoom.Add(Character);
-				OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
-			}
 			
+	//TODO: Restructure the enter and leave methods
+	// - Discern if character > then type of character  > then what to do with each type
+
+	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
+
+		if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
+			PlayerCharactersInRoom.Add(Character);
+			OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
 
 			auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
-			//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
+			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
 
+			// Run method on Blueprint class implementation
 			OnRunRoomEvents();
+
+			Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+		}
+		else if (ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor) ) { // TODO: Could change to Enemy/ NPC?
+			// TODO: Store NPC character references in array?
+			Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
 		}
 	}
-
-
 }
 
 void ABaseRoom::OnComponentExitRoom(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
+		if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
+			PlayerCharactersInRoom.Remove(Character);
+			OnCharacterExitDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
 
-		if (OtherActor->IsA(APlayerPaperCharacter::StaticClass())) {
-			if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
-				PlayerCharactersInRoom.Remove(Character);
-				OnCharacterExitDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
-			}
-
-			//auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-			//if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*CameraBounds);
-			//Cast<APlayerPaperCharacter>(OtherActor)->SetCameraBounds(*CameraBounds); // Pass to componen<=== TODO!!!!
-
-			//OnRunRoomEvents();
+			if (PlayerCharactersInRoom.Num() == 0) OnEndRoomEvents();
 		}
+		//else if (ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor)) { // TODO: Could change to Enemy/ NPC?
+		//	//Remove NPC ref from array?																			   // TODO: Store NPC character references in array?																		   // TODO: Store NPC character references in array?
+		//	Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+		//}
 	}
 }
 

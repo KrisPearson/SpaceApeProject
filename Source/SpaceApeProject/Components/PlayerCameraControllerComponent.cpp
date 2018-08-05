@@ -111,7 +111,7 @@ void UPlayerCameraControllerComponent::UpdateCameraBounds(float DeltaTime) {
 				FMath::Clamp(ValueToClamp.Z, CameraBoundsMin.Z, CameraBoundsMax.Z)
 			);
 
-			FVector CameraDestination = FMath::VInterpTo(CameraBoom->GetComponentLocation(), TargetLocation, DeltaTime, 3.5);
+			FVector CameraDestination = FMath::VInterpTo(CameraBoom->GetComponentLocation(), TargetLocation, DeltaTime, CameraInterpSpeed);
 
 			CameraBoom->SetWorldLocation(CameraDestination);
 		}

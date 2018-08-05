@@ -154,7 +154,22 @@ protected:
 
 	FVector FaceDirectionVector;
 
+
+
+	// Used to reinstate movement input following override
+	FTimerHandle MovementOverrideTimer;
+	bool bInputDisabled = false;
+
+	FVector OverrideDirection;
+
+	UFUNCTION()
+		void EnableCharacterInput();
+
 public:
+
+
+	void ForceMoveToLocation(FVector TargetLocation);
+
 
 
 	inline bool GetIsShooting() { return bIsShooting; }
@@ -179,8 +194,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
 		FOnCharacterDeath CharacterDeathDelegate;
 
+	void SetCurrentRoomBounds(const class UBoxComponent & RoomBoundsBox);
+
 protected:
 
+	// class UBoxComponent * CurrentRoomBounds; TODO: Do we want to store a reference to the box or just the min/max?
+
+	FVector MinRoomBounds;
+	FVector MaxRoomBounds;
 
 	class UMaterialInstanceDynamic* DynamicSpriteMaterial;
 
@@ -195,4 +216,9 @@ protected:
 
 		bool CheckIfAlive();
 
+
+
+	private:
+
+		bool bMovementControlOverridden;
 };

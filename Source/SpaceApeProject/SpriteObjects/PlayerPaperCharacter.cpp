@@ -188,6 +188,8 @@ void APlayerPaperCharacter::Tick(float DeltaTime) {
 
 void APlayerPaperCharacter::HandleMovement(float DeltaTime) {
 
+	if (bInputDisabled) return; //TEMP
+
 	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
 	FVector MoveDirection = FVector(CurrentVerticalMoveValue, CurrentHorizontalMoveValue, 0.f).GetClampedToMaxSize(1.0f);
 
@@ -355,4 +357,5 @@ void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 		//UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 }
+
 

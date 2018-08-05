@@ -38,7 +38,7 @@ public:
 
 	void SetBoomReference(class USpringArmComponent& NewSpringArm);
 
-
+	float CameraInterpSpeed = 1.5f;
 
 private:
 	void UpdateCameraBounds(float DeltaTime);

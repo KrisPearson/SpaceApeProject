@@ -63,6 +63,7 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public ABasePaperCharacter
 
 private:
 
+
 	bool bCanFire = true;
 
 	/** Handle for management of ShotTimerExpired timer */
@@ -77,6 +78,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 		void MulticastPlayFireSound();
 	virtual void MulticastPlayFireSound_Implementation(); //TODO: Consider best approach to handle audio channels
+
+
 
 
 

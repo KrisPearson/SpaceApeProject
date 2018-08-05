@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-//#include "SpriteObjects/PlayerPaperCharacter.h"
 #include "BaseRoom.generated.h"
 
 
@@ -19,26 +18,27 @@ class SPACEAPEPROJECT_API ABaseRoom : public AActor
 {
 	GENERATED_BODY()
 	
-
-	//TArray<SpawnComponents>
-
 public:	
 	// Sets default values for this actor's properties
 	ABaseRoom();
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
 
 
 	FOnCharacterEnter OnCharacterEnterDelegate;
 
 	FOnCharacterExit OnCharacterExitDelegate;
 
-	TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
+	// The Bounds for this room for Characters
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Room)
-	class UBoxComponent* RoomTriggerBox;
+	class UBoxComponent* RoomBounds;
 
 	// The Bounds for this Room of the Camera
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Room)
@@ -51,10 +51,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Room)
 		class UStaticMeshComponent* RoomMesh;
 
-	// The Primary mesh for the room
+	// The Material to apply to the room
 	//UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Room)
 		//class Material* TileSet;
-
 
 
 
@@ -74,13 +73,20 @@ protected:
 
 	void BeginRoomEvents();
 
+	// Method to be used by Blueprint implementations of this class
 	UFUNCTION(BlueprintImplementableEvent, Category = "Room Event")
 	void OnRunRoomEvents();
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	// Method to be used by Blueprint implementations of this class. Called when the 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Room Event")
+		void OnEndRoomEvents();
 
-	
+	TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
+
+public:	
+
+	UBoxComponent * const GetGameraBoundsBox() const { return CameraBounds; };
+
+	UBoxComponent * const GetRoomBoundsBox() const { return RoomBounds; };
 	
 };

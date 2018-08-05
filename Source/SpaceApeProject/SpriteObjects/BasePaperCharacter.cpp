@@ -7,11 +7,13 @@
 #include "Components/ObjectPoolComponent.h"
 #include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/SpriteShadowComponent.h"
+#include "Components/BoxComponent.h"
 #include "PaperFlipbookComponent.h"
 
 #include "Materials/MaterialInstance.h"
 
 #include "SpriteObjects/BaseProjectile.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -83,6 +85,7 @@ void ABasePaperCharacter::BeginPlay() {
 	// Set the health points the class uses during play to the value of the character's default health points.
 	CurrentHealthPoints = HealthPoints;
 
+	//GetController()->SetIgnoreMoveInput(true);
 
 }
 
@@ -93,36 +96,20 @@ void ABasePaperCharacter::Tick(float DeltaTime) {
 	
 	UpdateIsShooting();
 
+	if (bInputDisabled) { //TEMP TODO:move to movement component
+	//	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
+	//	FVector MoveDirection = FVector(CurrentVerticalMoveValue, CurrentHorizontalMoveValue, 0.f).GetClampedToMaxSize(1.0f);
 
-	//if (Role == ROLE_Authority) {
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_Authority")));
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
-	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
-	//}
-	//else if (Role == ROLE_AutonomousProxy) {
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_AutonomousProxy")));
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
-	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
-	//}
-	//else if (Role == ROLE_SimulatedProxy) {
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Blue, FString::Printf(TEXT(" ROLE_SimulatedProxy")));
-	//	GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" bIsShooting =: %s "), bIsShooting ? TEXT("True") : TEXT("False")));
-	//	//GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::White, FString::Printf(TEXT(" ReplicatedIsShooting =: %s "), ReplicatedIsShooting ? TEXT("True") : TEXT("False")));
-	//}
+	//	// Calculate  movement
+	//	const FVector Movement = MoveDirection * /*MoveSpeed*/10 * DeltaTime;
+	//	if (Movement.SizeSquared() > 0.0f) {
+	//		//Apply Movement
+			AddMovementInput(OverrideDirection, 1);
 
+	//		//UE_LOG(LogTemp, Warning, TEXT("HandleMovement: %f , %f"), CurrentVerticalMoveValue, CurrentHorizontalMoveValue);
+	//	}
+	}
 }
-//
-//void ABasePaperCharacter::SetIsShooting(bool newValue) {
-//
-//	bIsShooting = newValue;
-//
-//	if (bIsShooting) {
-//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_Authority =: %s for %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
-//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_AutonomousProxy =: %s for %s"), Role == ROLE_AutonomousProxy ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
-//		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, FString::Printf(TEXT(" ROLE_SimulatedProxy =: %s for %s"), Role == ROLE_SimulatedProxy ? TEXT("True") : TEXT("False"), *GetFName().ToString()));
-//	}
-//}
-
 
 
 /*
@@ -145,8 +132,6 @@ void ABasePaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewWea
 		EquippedWeaponComponent->RegisterComponent(); // this has been added to enable the component tick for some components
 		EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
 		FireSound = EquippedWeaponComponent->GetFireSound();
-
-
 
 		//FWeaponData NewWeaponData = EquippedWeaponComponent->GetWeaponData();
 		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
@@ -255,11 +240,73 @@ bool ABasePaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
 
 }
 
+/*Informs the charatcer of a new set of room bounds.
+@param The box component from which to source the new bounds.
+*/
+void ABasePaperCharacter::SetCurrentRoomBounds(const UBoxComponent & CameraBoundsBox) {
+	if (Role == ROLE_Authority || Role == ROLE_AutonomousProxy) {
+		FVector BoxExtent = CameraBoundsBox.GetScaledBoxExtent();
 
+		FVector Origin = CameraBoundsBox.GetComponentLocation();
+
+
+		//UE_LOG(LogTemp, Warning, TEXT("Box Origin = %f , %f , %f"), Origin.X, Origin.Y, Origin.Z);
+
+		MinRoomBounds = FVector(Origin.X - BoxExtent.X, Origin.Y - BoxExtent.Y, Origin.Z - BoxExtent.Z);
+		MaxRoomBounds = FVector(Origin.X + BoxExtent.X, Origin.Y + BoxExtent.Y, Origin.Z + BoxExtent.Z);
+
+		//UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMin = %f , %f , %f"), CameraBoundsMin.X, CameraBoundsMin.Y, CameraBoundsMin.Z);
+	}
+}
+
+/*Forcefully overrides movement input to move the character to a target location */
+void ABasePaperCharacter::ForceMoveToLocation(FVector TargetLocation) {
+
+	FVector CurrentLocation = GetActorLocation();
+
+	//TODO: Implement 'L' shape movement to handle walking around corners
+
+	OverrideDirection = TargetLocation - CurrentLocation;
+
+
+	float DistanceToTarget = FVector::Distance(CurrentLocation, TargetLocation);
+	GetMovementComponent()->GetMaxSpeed();
+
+
+	//float t = (GetMovementComponent()->GetMaxSpeed() - 0 ) / GetMovementComponent()->getAcc
+
+
+	float TimerDuratrion = DistanceToTarget / GetMovementComponent()->GetMaxSpeed();//1.f; //TODO: Calculate time to move to location
+	TimerDuratrion += 0.1f;
+
+
+	UE_LOG(LogTemp, Warning, TEXT(" ABasePaperCharacter::ForceMoveToLocation: %f , %f"), OverrideDirection.X, OverrideDirection.Y);
+	UE_LOG(LogTemp, Warning, TEXT(" Time to move = %f "), TimerDuratrion );
+
+	bInputDisabled = true;
+	GetWorld()->GetTimerManager().SetTimer(MovementOverrideTimer, this, &ABasePaperCharacter::EnableCharacterInput, TimerDuratrion, false);
+
+
+
+	// Calculate  movement
+	//const FVector Movement = MoveDirection * /*MoveSpeed*/10 * DeltaTime;
+	//if (Movement.SizeSquared() > 0.0f) {
+	//	//Apply Movement
+	//	AddMovementInput(MoveDirection, 1);
+
+	//	//UE_LOG(LogTemp, Warning, TEXT("HandleMovement: %f , %f"), CurrentVerticalMoveValue, CurrentHorizontalMoveValue);
+	//}
+}
+
+void ABasePaperCharacter::EnableCharacterInput() {
+	bInputDisabled = false;
+}
 
 
 
 #pragma region CharacterInterface Methods 
+
+
 
 void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
 
