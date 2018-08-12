@@ -282,6 +282,9 @@ void ABaseProjectile::PassNewWeaponData(FWeaponData _NewWeaponData, int _NewWeap
 
 		MulticastAssignWeaponDataValues(_NewWeaponData.ProjectileParticleSystem, _NewWeaponData.HitEffectParticleSystem, _NewWeaponData.HitSound, _NewWeaponData.BaseProjectileSpeed);
 	}
+
+	GetWorld()->GetAuthGameMode();
+
 }
 
 void ABaseProjectile::MulticastAssignNewWeaponData_Implementation(FWeaponData _NewWeaponData) {
