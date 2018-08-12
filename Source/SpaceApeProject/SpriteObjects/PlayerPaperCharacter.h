@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PaperCharacter.h"
-#include "Interfaces/SpriteCharacterInterface.h"
+#include "SpriteObjects/BasePaperCharacter.h"
 #include "PlayerPaperCharacter.generated.h"
 
 //enum class EHeading :uint8 {
@@ -16,23 +15,16 @@
 //	H_None UMETA(DisplayName = "No Heading") = -1
 //};
 
-UENUM()
-enum class Heading {
-	H_East= 0,
-	H_North = 1,
-	H_West = 2,
-	H_South = 3,
+//UENUM()
+//enum class Heading {
+//	H_East= 0,
+//	H_North = 1,
+//	H_West = 2,
+//	H_South = 3,
+//
+//	H_None = 99
+//};
 
-	H_None = 99
-};
-
-UENUM(BlueprintType)
-enum class EFaceDirection : uint8 {
-	FD_Left UMETA(DisplayName = "Face Left"),
-	FD_Right UMETA(DisplayName = "Face Right"),
-	FD_Up UMETA(DisplayName = "Face Up"),
-	FD_Down UMETA(DisplayName = "Face Down")
-};
 
 //#include "Components/PlayerMovementComponent.h"
 //#include "Components/PlayerMovementReplicator.h"
@@ -41,20 +33,14 @@ enum class EFaceDirection : uint8 {
  * 
  */
 UCLASS()
-class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter, public ISpriteCharacterInterface
+class SPACEAPEPROJECT_API APlayerPaperCharacter : public ABasePaperCharacter
 {
 	GENERATED_BODY()
 
-		class UWorld* World;
+	APlayerPaperCharacter();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
-	class UPaperCharacterAnimationComponent* AnimationComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
-	class USpriteShadowComponent* ShadowComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
-	class USoundBase* FireSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
 		class UPlayerCameraControllerComponent* CameraController;
@@ -77,26 +63,21 @@ class SPACEAPEPROJECT_API APlayerPaperCharacter : public APaperCharacter, public
 
 private:
 
+
 	bool bCanFire = true;
 
-	/** Handle for efficient management of ShotTimerExpired timer */
-	FTimerHandle TimerHandle_ShotTimerExpired;
-
+	/** Handle for management of ShotTimerExpired timer */
+	FTimerHandle TimerHandle_ShotTimerExpired; // TODO: Move to weapon component ?
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
 
 
-	UPROPERTY()
-	class UBaseWeaponComponent* EquippedWeaponComponent;
-
-	struct FWeaponData* EquippedWeaponData;
 
 	UFUNCTION(NetMulticast, Reliable)
 		void MulticastPlayFireSound();
-	virtual void MulticastPlayFireSound_Implementation();
-
+	virtual void MulticastPlayFireSound_Implementation(); //TODO: Consider best approach to handle audio channels
 
 
 
@@ -108,55 +89,22 @@ private:
 
 protected:
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override; //TODO: TEMP
 
 
 	virtual void BeginPlay() override;
 
-	void HandleShooting();
+	virtual void HandleShooting() override;
 
-	void HandleMovement(float DeltaTime);
-
-
-
-	EFaceDirection LastUpdatedMovingDirection;
-
-	UPROPERTY(Replicated)
-	EFaceDirection CurrentMovingDirection;
-
-
-	UPROPERTY(Replicated)
-	EFaceDirection CurrentShootingDirection;
-
-	//UPROPERTY(ReplicatedUsing = OnRep_ReplicatedShootingDirection)
-	EFaceDirection ReplicatedShootingDirection;
-
-
-
-	UFUNCTION()
-	void OnRep_ReplicatedShootingDirection();
-
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerModifyMoveDirection(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue);
-	virtual bool ServerModifyMoveDirection_Validate(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue) { return true; };
-	virtual void ServerModifyMoveDirection_Implementation(APlayerPaperCharacter* TargetedActor, EFaceDirection NewValue) { TargetedActor->CurrentMovingDirection = NewValue; };
-
-
-	// The default weapon, as assigned in the character blueprint. 
-	UPROPERTY(Category = Gameplay, EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<class UBaseWeaponComponent> DefaultWeaponComponent;
+	virtual void HandleMovement(float DeltaTime) override;
 
 
 
 
-	bool bIsShooting = false;
 
-	//The object count assigned to the projectile pool on its creation.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shooting, meta = (AllowPrivateAccess = "true"))
-		int DefaultProjectilePoolSize = 60;
 
-	class UObjectPoolComponent* ProjectilePool;
+
+
 
 
 
@@ -167,42 +115,23 @@ protected:
 	void ShootUp(float Value);
 	void ShootRight(float Value);
 
-	int CurrentHorizontalShootValue = 0;
-	int CurrentVerticalShootValue = 0;
+
 
 	float CurrentHorizontalMoveValue = 0;
 	float CurrentVerticalMoveValue = 0;
 
-	void ShootToHeading(Heading HeadingDirection);
+	void ShootInDirection(FVector Direction);
 
 	UFUNCTION(Reliable, Server, WithValidation)
-		void ServerShootToHeading(Heading HeadingDirection);
-	void ServerShootToHeading_Implementation(Heading HeadingDirection);
-	bool ServerShootToHeading_Validate(Heading HeadingDirection) { return true;  };
+		void ServerShootInDirection(FVector Direction);
+	void ServerShootInDirection_Implementation(FVector Direction);
+	bool ServerShootInDirection_Validate(FVector Direction) { return true;  };
 
 	void ShotTimerExpired();
 
-	UFUNCTION()
-		void DealDamage(AActor* _Enemy, int _DamageAmount);
+	//virtual void DealDamage( AActor* ActorToDamage, int DamageAmount) override;
 
 
-
-
-public:
-	APlayerPaperCharacter();
-
-	FVector FaceDirectionVector;
-
-	//ISpriteCharacterInterface method
-	virtual FVector GetCharacterFaceDirection_Implementation() const override;
-
-	inline bool GetIsShooting() { return bIsShooting; }
-
-	inline EFaceDirection GetCurrentShootingDirection() { return CurrentShootingDirection; }
-
-	inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
-
-	void ChangeWeapon(TSubclassOf<class UBaseWeaponComponent> _NewWeapon);
 
 
 };

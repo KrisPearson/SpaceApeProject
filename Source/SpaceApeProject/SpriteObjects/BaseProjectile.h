@@ -31,7 +31,7 @@ protected:
 
 	/** Mesh collision component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* ProjectileMesh;
+		class USphereComponent* ProjectileCollisionSphere;
 
 	/** Projectile Particle System**/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"), Replicated)
@@ -97,6 +97,10 @@ public:
 
 private:
 
+	UFUNCTION(NetMulticast, Reliable)
+		void MulticastTerminateProjectile();
+	void MulticastTerminateProjectile_Implementation();
+
 	class UObjectPoolComponent* OwningPool;
 
 	FTimerHandle ReturnToPoolTimer;
@@ -110,12 +114,25 @@ private:
 	FWeaponData** WeaponData;
 
 	inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
-		UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
+		//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
 		if (OnEnemyHit.IsBound()) {
 			OnEnemyHit.Broadcast(_HitActor, _DamageAmount);
-			UE_LOG(LogTemp, Warning, TEXT("Broadcast hit: Bound = true"));
+			//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit: Bound = true"));
 		}
 	}
 
+	UFUNCTION()
+		void OnComponentEnterTrigger(UPrimitiveComponent* OverlappedComponent,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult &SweepResult);
+
+	UFUNCTION()
+		void OnComponentExitTrigger(UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex);
 	
 };

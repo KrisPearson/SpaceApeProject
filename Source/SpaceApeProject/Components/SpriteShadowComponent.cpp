@@ -24,10 +24,20 @@ USpriteShadowComponent::USpriteShadowComponent()
 void USpriteShadowComponent::BeginPlay() {
 	Super::BeginPlay();
 
-	ShadowDecal = GetWorld()->SpawnActor<ADecalActor>();
+	ShadowDecal = GetWorld()->SpawnActor<ADecalActor>(GetOwner()->GetActorLocation(), FRotator(0,0,0));
 	if (ShadowMaterial != nullptr) ShadowDecal->SetDecalMaterial(ShadowMaterial);
 	else UE_LOG(LogTemp, Warning, TEXT("Failed to load ShadowMaterial for SpriteShadowComponent"));
 	ShadowDecal->SetActorScale3D(FVector(0.3, ShadowScale, ShadowScale));
+}
+
+//void USpriteShadowComponent::BeginDestroy() {
+//	Super::BeginDestroy();
+//	if (ShadowDecal != nullptr) ShadowDecal->Destroy();
+//}
+
+void USpriteShadowComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
+	if (ShadowDecal != nullptr) ShadowDecal->Destroy();
 }
 
 

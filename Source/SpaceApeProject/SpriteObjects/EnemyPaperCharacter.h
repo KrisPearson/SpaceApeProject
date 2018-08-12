@@ -3,16 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PaperCharacter.h"
+#include "SpriteObjects/BasePaperCharacter.h"
 #include "EnemyPaperCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeath, AEnemyPaperCharacter*, EnemyPointer);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeath, AEnemyPaperCharacter*, EnemyPointer);
 
 /**
  * 
  */
 UCLASS()
-class SPACEAPEPROJECT_API AEnemyPaperCharacter : public APaperCharacter
+class SPACEAPEPROJECT_API AEnemyPaperCharacter : public ABasePaperCharacter 
 {
 	GENERATED_BODY()
 	
@@ -21,10 +21,6 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public APaperCharacter
 	AEnemyPaperCharacter();
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	// The default health points attributed to the enemy
-	UPROPERTY(EditAnywhere, Category = Stats, meta = (ClampMin = "10", ClampMax = "1000"))
-		int HealthPoints = 10;
 
 	// The maximum movement speed of the enemy
 	UPROPERTY(EditAnywhere, Category = Stats, meta = (ClampMin = "10", ClampMax = "1000"))
@@ -42,8 +38,9 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public APaperCharacter
 	UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "100", ClampMax = "10000", UIMin = "100", UIMax = "10000"))
 		int SpawnCost = 1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
-		class USpriteShadowComponent* ShadowComponent;
+
+	UPROPERTY(EditAnywhere, Category = Behaviour)
+		class UBehaviorTree* BotBehavior;
 
 
 	//UFUNCTION()
@@ -58,37 +55,20 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public APaperCharacter
 	UFUNCTION()
 		inline int GetSpawnCost() { return SpawnCost;  };
 
-	UPROPERTY(BlueprintAssignable, Category = "EventDispatchers")
-		FOnEnemyDeath EnemyDeathDelegate;
-
 public:
 	
-	UFUNCTION()
-		virtual void ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd);
+	//UFUNCTION()
+		//virtual void ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd);
 private:
 
-	UPROPERTY(Replicated)
-		int CurrentHealthPoints;
+
 
 	UWorld* World;
-	
-	class UMaterialInstanceDynamic* DynamicEnemyMaterial;
+
 
 	//FTimerHandle DamageFlashTimerHandle;
 
 	//UPROPERTY(EditAnywhere, Category = Behaviour)
 		//class UBehaviorTree* BotBehavior;
 	
-	bool CheckIfAlive();
-
-protected:
-
-	UFUNCTION(NetMulticast, reliable)
-		void MulticastPlayDamageFlash();
-	void MulticastPlayDamageFlash_Implementation();
-
-
-
-	UFUNCTION()
-		void EnemyDeath();
 };

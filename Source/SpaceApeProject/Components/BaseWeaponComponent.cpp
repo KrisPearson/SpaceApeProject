@@ -1,10 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/**
+BaseWeaponComponent.cpp
+Purpose: Defines the properties of a weapon including stats and artwork to be applied to projectiles.
+
+The BaseWeaponComponent is intended to be inherrited by Weapons in order to create different varients of weapons.
+
+@author Kristian Pearson
+@version 1.0 17/18/2018
+*/
 
 #include "Components/BaseWeaponComponent.h"
 #include "Components/ObjectPoolComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Interfaces/SpriteObjectInterface.h"
 #include "SpriteObjects/PlayerPaperCharacter.h"
 
 /*
@@ -30,17 +40,26 @@ void UBaseWeaponComponent::BeginPlay() {
 	World = GetWorld();
 	OwningCharacter = Cast<APlayerPaperCharacter>(GetOwner());
 
-	if (OwningCharacter) {
-		WeaponData = FWeaponData(
-			ProjectileParticle,
-			HitParticle,
-			FireAudio,
-			HitAudio,
-			DelayBetweenShots,
-			Damage,
-			Speed
-		);
-	};
+	ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(GetOwner());
+	if (ObjectInterface) {
+		// Attempt to Deal damage, and check whether it was successful.
+		TeamOwner::ETeamOwner OwningTeam = ISpriteObjectInterface::Execute_GetTeamOwner(GetOwner());
+
+		if (OwningCharacter) {
+			WeaponData = FWeaponData(
+				ProjectileParticle,
+				HitParticle,
+				FireAudio,
+				HitAudio,
+				DelayBetweenShots,
+				Damage,
+				Speed,
+				OwningTeam
+			);
+		};
+
+		UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
+	}
 }
 
 // Called every frame
@@ -52,7 +71,7 @@ void UBaseWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 /*
 This overridable method gets projectiles from the character's object pool component and "spawns" them.
-should be called by the server by an RPC when networking.
+Should be called by the server by an RPC when networking.
 */
 void UBaseWeaponComponent::Shoot(FVector _FireDirection) {
 
@@ -81,12 +100,12 @@ UObjectPoolComponent * UBaseWeaponComponent::GetObjectPoolReference() {
 	else return nullptr;
 }
 
+/*Compares the ID of the projectile to that of this weapon component. If they do not match, 
+then the projectile is updated to match the WeaponData of this weapon. */
 void UBaseWeaponComponent::CheckAndUpdateProjectile(ABaseProjectile * _Projectile) {
 	if (_Projectile->GetWeaponDataID() != GetUniqueID()) {
 		// update the weapon data of the projectile, and update the id
 		_Projectile->PassNewWeaponData(WeaponData, GetUniqueID());
-		UE_LOG(LogTemp, Warning, TEXT(" PassNewWeaponData %f"),  WeaponData.BaseWeaponDamage);
-
 	}
 }
 

@@ -10,10 +10,10 @@
 #include "GameFramework/Controller.h"
 
 #include "Components/DecalComponent.h"
-#include "SpriteObjects/BaseProjectile.h"
-#include "Components/SpriteShadowComponent.h"
+//#include "SpriteObjects/BaseProjectile.h"
+//#include "Components/SpriteShadowComponent.h"
 #include "Components/ObjectPoolComponent.h"
-#include "Components/PaperCharacterAnimationComponent.h"
+//#include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/BaseWeaponComponent.h"
 #include "Components/PlayerCameraControllerComponent.h"
 
@@ -21,7 +21,7 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Engine/World.h"
-#include "Net/UnrealNetwork.h"
+
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -29,7 +29,7 @@
 
 #include "SpriteObjects/EnemyPaperCharacter.h"
 
-const float CAMERA_ANGLE = -60.0f;
+
 
 
 FString GetEnumText(ENetRole Role) {
@@ -72,18 +72,10 @@ const FName APlayerPaperCharacter::FireRightBinding("ShootHorizontalAxis");
 
 APlayerPaperCharacter::APlayerPaperCharacter() {
 
-	float angle = CAMERA_ANGLE;
-
-	// Rotate the Sprite to face the negative X direction and tilt up to face the camera
-	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CAMERA_ANGLE));
-	GetSprite()->AddLocalOffset(FVector(10, 0, 0));
-
 	// Enable replication on the Sprite component so animations show up when networked
 	//GetSprite()->SetIsReplicated(true);
 
 	GetCapsuleComponent()->SetCollisionProfileName("Player");
-
-
 
 	// Create a camera boom attached to the root (capsule) 
 	CameraBoomComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -92,7 +84,7 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 	//CameraBoomComponent->SocketOffset = FVector(0.0f, 0.0f, 120.0f);
 	//CameraBoom->bAbsoluteRotation = true;
 	CameraBoomComponent->bDoCollisionTest = false;
-	CameraBoomComponent->RelativeRotation = FRotator(CAMERA_ANGLE, 0.0f, 0.0f);
+	CameraBoomComponent->RelativeRotation = FRotator(CameraAngle, 0.0f, 0.0f);
 
 	// Create an orthographic camera (no perspective) and attach it to the boom
 	ObliqueViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ObliqueViewCamera"));
@@ -105,16 +97,9 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 	ObliqueViewCameraComponent->bUsePawnControlRotation = false;
 	ObliqueViewCameraComponent->bAutoActivate = true;
 
-
-
-
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
-	ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
-
-	AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
-
-	ProjectilePool = CreateDefaultSubobject<UObjectPoolComponent>(TEXT("ProjectilePool"));
+	GetSprite()->AddLocalRotation(FRotator(00.f, 90.f, CameraAngle));
 
 	CameraController = CreateDefaultSubobject<UPlayerCameraControllerComponent>(TEXT("CameraController"));
 	CameraController->SetBoomReference(*CameraBoomComponent);
@@ -122,13 +107,11 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 	//SetOwner(GetController());
 
-	bReplicates = true;
+	TeamOwner = TeamOwner::ETeamOwner::TO_Player;
 
 }
 
-FVector APlayerPaperCharacter::GetCharacterFaceDirection_Implementation() const {
-	return FaceDirectionVector;
-}
+
 
 void APlayerPaperCharacter::SetupPlayerInputComponent(UInputComponent * InputComponent) {
 	Super::SetupPlayerInputComponent(InputComponent);
@@ -138,35 +121,10 @@ void APlayerPaperCharacter::SetupPlayerInputComponent(UInputComponent * InputCom
 	InputComponent->BindAxis(FireRightBinding, this , &APlayerPaperCharacter::ShootRight);
 }
 
-void APlayerPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	//DOREPLIFETIME(APlayerPaperCharacter, bIsShooting);
-	DOREPLIFETIME(APlayerPaperCharacter, CurrentMovingDirection);
-	DOREPLIFETIME(APlayerPaperCharacter, CurrentShootingDirection);
-}
 
 void APlayerPaperCharacter::BeginPlay() {
 	Super::BeginPlay();
-	World = GetWorld();
 
-	ChangeWeapon(DefaultWeaponComponent);
-
-	if (Role == ROLE_Authority) {
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" FillPool Called on Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-		ProjectilePool->FillPool(ABaseProjectile::StaticClass(), DefaultProjectilePoolSize);
-		if (EquippedWeaponComponent) {
-			EquippedWeaponComponent->SetObjectPoolReference(ProjectilePool);
-			EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
-		}
-
-		TArray<AActor*>* PoolArray = ProjectilePool->GetArrayPointer();
-		for (AActor* Actor : *PoolArray) {
-			
-			Cast<ABaseProjectile>(Actor)->SetWeaponData(&EquippedWeaponData);
-			Cast<ABaseProjectile>(Actor)->OnEnemyHit.AddDynamic(this, &APlayerPaperCharacter::DealDamage);
-			Cast<ABaseProjectile>(Actor)->SetPoolReference(ProjectilePool);
-		}
-	}
 }
 
 
@@ -175,61 +133,64 @@ void APlayerPaperCharacter::Tick(float DeltaTime) {
 
 	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(Role), this, FColor::White, DeltaTime - 0.1f);
 
-	DrawDebugString(GetWorld(), FVector(0, 0, 85), GetEnumText(CurrentMovingDirection), this, FColor::Emerald, DeltaTime - 0.1f);
+	//DrawDebugString(GetWorld(), FVector(0, 0, 85), GetEnumText(CurrentMovingDirection), this, FColor::Emerald, DeltaTime - 0.1f);
+
 
 	HandleMovement(DeltaTime);
 	HandleShooting();
 
-	if (LastUpdatedMovingDirection != CurrentMovingDirection && Role == ROLE_AutonomousProxy) {
-		ServerModifyMoveDirection(this, CurrentMovingDirection);
-		LastUpdatedMovingDirection = CurrentMovingDirection;
-	}
+	//if (LastUpdatedMovingDirection != CurrentMovingDirection && Role == ROLE_AutonomousProxy) {
+	//	ServerModifyMoveDirection(this, CurrentMovingDirection);
+	//	LastUpdatedMovingDirection = CurrentMovingDirection;
+	//}
 
 
-	// TODO: Refactor the forward vector seting and use an interface to retrieve it from the player character (SpriteCharacterInterface.h)
+	// TODO: Refactor the forward vector seting and use an interface to retrieve it from the player character (SpriteObjectInterface.h)
 
-	if (bIsShooting == true) {
-		switch (CurrentShootingDirection) {
-		case EFaceDirection::FD_Left:
-			 FaceDirectionVector = FVector(0, -1, 0);
-			break;
-		case EFaceDirection::FD_Right:
-			 FaceDirectionVector = FVector(0, 1, 0);
-			break;
-		case EFaceDirection::FD_Up:
-			 FaceDirectionVector = FVector(1, 0, 0);
-			break;
-		case EFaceDirection::FD_Down:
-			 FaceDirectionVector = FVector(-1, 0, 0);
-			break;
-		default:
-			break;
-		}
-	}
-	else {
-		switch (CurrentMovingDirection) {
-		case EFaceDirection::FD_Left:
-			 FaceDirectionVector = FVector(0, -1, 0);
-			break;
-		case EFaceDirection::FD_Right:
-			 FaceDirectionVector = FVector(0, 1, 0);
-			break;
-		case EFaceDirection::FD_Up:
-			 FaceDirectionVector = FVector(1, 0, 0);
-			break;
-		case EFaceDirection::FD_Down:
-			 FaceDirectionVector = FVector(-1, 0, 0);
-			break;
-		default:
-			break;
-		}
-	}
+	//if (bIsShooting == true) {
+	//	switch (CurrentShootingDirection) {
+	//	case EFaceDirection::FD_Left:
+	//		 FaceDirectionVector = FVector(0, -1, 0);
+	//		break;
+	//	case EFaceDirection::FD_Right:
+	//		 FaceDirectionVector = FVector(0, 1, 0);
+	//		break;
+	//	case EFaceDirection::FD_Up:
+	//		 FaceDirectionVector = FVector(1, 0, 0);
+	//		break;
+	//	case EFaceDirection::FD_Down:
+	//		 FaceDirectionVector = FVector(-1, 0, 0);
+	//		break;
+	//	default:
+	//		break;
+	//	}
+	//}
+	//else {
+	//	switch (CurrentMovingDirection) {
+	//	case EFaceDirection::FD_Left:
+	//		 FaceDirectionVector = FVector(0, -1, 0);
+	//		break;
+	//	case EFaceDirection::FD_Right:
+	//		 FaceDirectionVector = FVector(0, 1, 0);
+	//		break;
+	//	case EFaceDirection::FD_Up:
+	//		 FaceDirectionVector = FVector(1, 0, 0);
+	//		break;
+	//	case EFaceDirection::FD_Down:
+	//		 FaceDirectionVector = FVector(-1, 0, 0);
+	//		break;
+	//	default:
+	//		break;
+	//	}
+	//}
 
 
 }
 
 
 void APlayerPaperCharacter::HandleMovement(float DeltaTime) {
+
+	if (bInputDisabled) return; //TEMP
 
 	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
 	FVector MoveDirection = FVector(CurrentVerticalMoveValue, CurrentHorizontalMoveValue, 0.f).GetClampedToMaxSize(1.0f);
@@ -244,39 +205,27 @@ void APlayerPaperCharacter::HandleMovement(float DeltaTime) {
 	}
 }
 
-void APlayerPaperCharacter::OnRep_ReplicatedShootingDirection() {
-	CurrentShootingDirection = ReplicatedShootingDirection;
-}
+
 
 void APlayerPaperCharacter::HandleShooting() {
 
-	bIsShooting = CurrentHorizontalShootValue != 0 || CurrentVerticalShootValue != 0;
+	//else if (Role == ROLE_AutonomousProxy)
 
 	//if (CurrentHorizontalShootValue != 0 || CurrentVerticalShootValue != 0) bIsShooting = true;
 	//else bIsShooting = false;
 
 	//Twin stick shooting direction
-	const float FireForwardValue = GetInputAxisValue(FireUpBinding);
-	const float FireRightValue = GetInputAxisValue(FireRightBinding);
+	//const float FireForwardValue = GetInputAxisValue(FireUpBinding);
+	//const float FireRightValue = GetInputAxisValue(FireRightBinding);
 
-	//TODO: Refactor firing direction code for efficiency/ tidiness and reliability/ adaptability
-	if (FireForwardValue != 0 || FireRightValue != 0) {
-		const FVector FireDirection = FVector(FMath::RoundToInt(FireForwardValue), FMath::RoundToInt(FireRightValue), 0.0f); // round the values to int to counter 'analogue' input from joystick affecting magnitude
-																															 //Cardinal Coordinate conversion
-		const FString headings[4] = { "E", "N", "W", "S", };
-		//const FString headings[8] = { "E", "NE", "N", "NW", "W", "SW", "S", "SE" };
-		const int SizeOfHeadings = (sizeof(headings) / sizeof(*headings));
-		float angle = FMath::Atan2(FireDirection.X, FireDirection.Y);
-		int octant = FMath::RoundToInt(SizeOfHeadings * angle / (2 * PI) + SizeOfHeadings) % SizeOfHeadings;
-		Heading dir = (Heading)octant;  // typecast to enum: 0 -> E etc.
-		FString dirStr = headings[octant];
-		//UE_LOG(LogTemp, Warning, TEXT(" %f , %f , Shoot dir = %s"), FireForwardValue, FireRightValue, *dirStr);
+	if (bIsShooting) {
+
 		if (bCanFire == true) {
 			if (Role == ROLE_AutonomousProxy) {
-				ServerShootToHeading(dir);
+				ServerShootInDirection(CurrentShootingDirection);
 			}
 			else if (Role == ROLE_Authority) {
-				ShootToHeading(dir); // TODO: Test whether we need this fot the server player
+				ShootInDirection(CurrentShootingDirection); // TODO: Test whether we need this fot the server player
 			}
 		}
 
@@ -284,89 +233,52 @@ void APlayerPaperCharacter::HandleShooting() {
 }
 
 void APlayerPaperCharacter::MoveUp(float Value) {
-	//if (MovementComponent == nullptr) return;
-
-	if (Value > 0) {
-		CurrentMovingDirection = EFaceDirection::FD_Up;
-	}
-	else if (Value < 0) {
-		CurrentMovingDirection = EFaceDirection::FD_Down;
-	}
 	CurrentVerticalMoveValue = Value;
-
-	//AddMovementInput(FVector(1.0f, 0.0f, 0.0f), Value);
 }
 
-
 void APlayerPaperCharacter::MoveRight(float Value) {
-	//if (MovementComponent == nullptr) return;
-	if (Value > 0) {
-		CurrentMovingDirection = EFaceDirection::FD_Right;
-	}
-	else if (Value < 0) {
-		CurrentMovingDirection = EFaceDirection::FD_Left;
-	}
-
 	CurrentHorizontalMoveValue = Value;
-
-	//AddMovementInput(FVector(0.0f, 1.0f, 0.0f), Value);
 }
 
 void APlayerPaperCharacter::ShootUp(float Value) {
 	if (Value > 0) {
-		CurrentShootingDirection = EFaceDirection::FD_Up;
+		CurrentShootingDirection = SpriteDirection::Up;
+		ServerSetCurrentShootingDirection(SpriteDirection::Up);//TEMP
 	}
 	else if (Value < 0) {
-		CurrentShootingDirection = EFaceDirection::FD_Down;
+		CurrentShootingDirection = SpriteDirection::Down;
+		ServerSetCurrentShootingDirection(SpriteDirection::Down);//TEMP
 	}
 	CurrentVerticalShootValue = Value;
 }
 
 void APlayerPaperCharacter::ShootRight(float Value) {
 	if (Value > 0) {
-		CurrentShootingDirection = EFaceDirection::FD_Right;
+		CurrentShootingDirection = SpriteDirection::Right;
+		ServerSetCurrentShootingDirection(SpriteDirection::Right);//TEMP
 	}
 	else if (Value < 0) {
-		CurrentShootingDirection = EFaceDirection::FD_Left;
+		CurrentShootingDirection = SpriteDirection::Left;
+		ServerSetCurrentShootingDirection(SpriteDirection::Left);//TEMP
 	}
 
 	CurrentHorizontalShootValue = Value;
 }
 
 
-void APlayerPaperCharacter::ShootToHeading(Heading HeadingDirection) {
+void APlayerPaperCharacter::ShootInDirection(FVector Direction) {
 	if (bCanFire == true) {
 
 		if (World != NULL) {
 
-			FVector FireDirection = FVector(0, 0, 0);
-
-			switch (HeadingDirection) {
-			case Heading::H_East:
-				FireDirection = GetActorRightVector();
-				break;
-			case Heading::H_North:
-				FireDirection = GetActorForwardVector();
-				break;
-			case Heading::H_West:
-				FireDirection = -GetActorRightVector();
-				break;
-			case Heading::H_South:
-				FireDirection = -GetActorForwardVector();
-				break;
-			default:
-				break;
-			}
-
-
-			const FRotator FireRotation = FireDirection.Rotation();
+			const FRotator FireRotation = Direction.Rotation();
 			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(FVector(0.5f, 0,0)/*GunOffset*/);
 
-			if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(FireDirection);
+			if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(Direction);
 			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
 
 			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, 0.4f /*EquippedWeaponComponent->GetFireRate()*/);
+			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate() );
 		}
 		if (FireSound != nullptr) {
 			MulticastPlayFireSound();
@@ -374,40 +286,20 @@ void APlayerPaperCharacter::ShootToHeading(Heading HeadingDirection) {
 	}
 }
 
-void APlayerPaperCharacter::ServerShootToHeading_Implementation(Heading HeadingDirection) {
-	UE_LOG(LogTemp, Warning, TEXT("ServerShootToHeading_Implementation"));
+void APlayerPaperCharacter::ServerShootInDirection_Implementation(FVector Direction) {
+	//UE_LOG(LogTemp, Warning, TEXT("ServerShootInDirection_Implementation"));
 	if (bCanFire == true) {
 
 		if (World != NULL) {
 
-			FVector FireDirection = FVector(0, 0, 0);
+			const FRotator FireRotation = Direction.Rotation();
+			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(FVector(0.5f, 0, 0)/*GunOffset*/); // TODO: Utilise sockets for spawn location? How would sockets be updated to match rotation?
 
-			switch (HeadingDirection) {
-			case Heading::H_East:
-				FireDirection = GetActorRightVector();
-				break;
-			case Heading::H_North:
-				FireDirection = GetActorForwardVector();
-				break;
-			case Heading::H_West:
-				FireDirection = -GetActorRightVector();
-				break;
-			case Heading::H_South:
-				FireDirection = -GetActorForwardVector();
-				break;
-			default:
-				break;
-			}
-
-
-			const FRotator FireRotation = FireDirection.Rotation();
-			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(FVector(0.5f, 0, 0)/*GunOffset*/);
-
-			if (EquippedWeaponComponent!= nullptr) EquippedWeaponComponent->Shoot(FireDirection);
+			if (EquippedWeaponComponent!= nullptr) EquippedWeaponComponent->Shoot(Direction);
 			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
 
 			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, 0.4f /*EquippedWeaponComponent->GetFireRate()*/);
+			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate());
 		}
 		if (FireSound != nullptr) {
 			MulticastPlayFireSound();
@@ -419,37 +311,39 @@ void APlayerPaperCharacter::ShotTimerExpired() {
 	bCanFire = true;
 }
 
-void APlayerPaperCharacter::DealDamage(AActor* _Enemy, int _Amount) {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
-	if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(_Enemy)) {
-		bool isEnemyDead;
-
-		int scoreFromDamage;
-
-		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
-		Enemy->ReceiveDamage(_Amount, isEnemyDead, scoreFromDamage);
-
-		if (isEnemyDead) {
-			//scoreFromDamage += Enemy->GetScoreValue();
-		}
-
-		//CurrentScore += scoreFromDamage;
-
-
-
-		// Inform the enemy of damage and check whether the enemy died as a result.
-		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
-		//	CurrentScore += ScoreValue;
-		//}
-		//else CurrentScore += scoreFromDamage;
-	}
-
-	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
-
-														//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
-
-
-}
+//void APlayerPaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
+//
+//	Super::DealDamage(ActorToDamage, DamageAmount);
+//	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
+//	//if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(CharacterToDamage)) {
+//		//bool isEnemyDead;
+//
+//		//int scoreFromDamage;
+//
+//		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
+//		//Enemy->ReceiveDamage(DamageAmount, isEnemyDead, scoreFromDamage);
+//
+//		//if (isEnemyDead) {
+//			//scoreFromDamage += Enemy->GetScoreValue();
+//	//	}
+//
+//		//CurrentScore += scoreFromDamage;
+//
+//
+//
+//		// Inform the enemy of damage and check whether the enemy died as a result.
+//		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
+//		//	CurrentScore += ScoreValue;
+//		//}
+//		//else CurrentScore += scoreFromDamage;
+//	//}
+//
+//
+//	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
+//
+//	//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
+//
+//}
 
 void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 	if (FireSound != nullptr) {
@@ -458,33 +352,4 @@ void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 	}
 }
 
-
-
-/*
-This will be used primarily for weapon pickups.
-Replaces the current weapon witha  new o ne.
-Need to destroy old component and perhaps perform some kind of check.
-This method should eventually be made private/ protected, and some kind of public condition check method should handle weapon changes.
-*/
-void APlayerPaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewWeapon) {
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" ChangeWeapon. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-
-	if (_NewWeapon) {
-
-		//EquippedWeaponComponent = ConstructObject<UUBaseWeaponComponent>(_NewWeapon, this, *_NewWeapon->GetName()/*TEXT("InitialWeapon")*/);
-		if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->DestroyComponent();
-		EquippedWeaponComponent = NewObject<UBaseWeaponComponent>(this, _NewWeapon, *_NewWeapon->GetName());
-		EquippedWeaponComponent->SetObjectPoolReference(ProjectilePool);
-
-		EquippedWeaponComponent->RegisterComponent(); // this has been added to enable the component tick for some components
-		EquippedWeaponData = EquippedWeaponComponent->GetWeaponData();
-		//delete FireSound;
-		FireSound = EquippedWeaponComponent->GetFireSound();
-
-		//FWeaponData NewWeaponData = EquippedWeaponComponent->GetWeaponData();
-		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
-	}
-
-}
 

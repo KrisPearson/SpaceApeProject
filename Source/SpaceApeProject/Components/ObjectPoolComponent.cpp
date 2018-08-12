@@ -1,5 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+/*
+ObjectPoolComponent.cpp
+Purpose: The primary purpose of this object pool is to handle projectiles, but it is generic enough to permit 
+other AActor derived types to be stored.
+
+@author Kristian Pearson
+@version 1.0 17/18/2018
+*/
+
 #include "ObjectPoolComponent.h"
 
 // Sets default values for this component's properties
@@ -16,7 +25,7 @@ void UObjectPoolComponent::FillPool(TSubclassOf<AActor> _ActorToSpawn, int _Coun
 
 			SpawnActorForPool(_ActorToSpawn);
 
-			UE_LOG(LogTemp, Warning, TEXT(" Adding Object to Pool"));
+			//UE_LOG(LogTemp, Warning, TEXT(" Adding Object to Pool"));
 
 		}
 	}
