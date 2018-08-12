@@ -71,8 +71,4 @@ private:
 	//UPROPERTY(EditAnywhere, Category = Behaviour)
 		//class UBehaviorTree* BotBehavior;
 	
-
-
-
-	//virtual bool RecieveDamage_Implementation(int DamageAmount) override;
 };

@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Runtime/Engine/Classes/Engine/StaticMesh.h"
 #include "Components/ActorComponent.h"
+#include "Enums/TeamOwnerEnum.h"
 
 #include "WeaponData.generated.h"
 
@@ -24,7 +25,7 @@ struct FWeaponData {
 	GENERATED_BODY()
 
 		//FWeaponData() {};
-	FWeaponData(UParticleSystem* _ProjectileParticleSystem = nullptr, UParticleSystem* _HitEffectParticleSystem = nullptr, USoundBase* _FireSound = nullptr, USoundBase* _HitSound = nullptr, float _WeaponFireRate = 1, int _BaseWeaponDamage = 10, float _BaseProjectileSpeed = 1000) {
+	FWeaponData(UParticleSystem* _ProjectileParticleSystem = nullptr, UParticleSystem* _HitEffectParticleSystem = nullptr, USoundBase* _FireSound = nullptr, USoundBase* _HitSound = nullptr, float _WeaponFireRate = 1, int _BaseWeaponDamage = 10, float _BaseProjectileSpeed = 1000, TeamOwner::ETeamOwner _OwningTeam = TeamOwner::ETeamOwner::TO_NoOwner) {
 		ProjectileParticleSystem = _ProjectileParticleSystem;
 		HitEffectParticleSystem = _HitEffectParticleSystem;
 		FireSound = _FireSound;
@@ -32,6 +33,7 @@ struct FWeaponData {
 		WeaponFireRate = _WeaponFireRate;
 		BaseWeaponDamage = _BaseWeaponDamage;
 		BaseProjectileSpeed = _BaseProjectileSpeed;
+		OwningTeam = _OwningTeam;
 	};
 
 	//Projectile Art
@@ -72,6 +74,10 @@ struct FWeaponData {
 	UPROPERTY(BlueprintReadWrite, Category = "WeaponData")
 		float BaseProjectileSpeed;
 
+	TeamOwner::ETeamOwner OwningTeam;
+
+	//UPROPERTY(BlueprintReadWrite, Category = "WeaponData")
+	//	TEnumAsByte<TeamOwner::ETeamOwner> OwningTeam;
 
 
 };

@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "PaperCharacter.h"
 #include "Interfaces/SpriteObjectInterface.h"
+#include "Interfaces/DamageableInterface.h"
+#include "Enums/TeamOwnerEnum.h"
 #include "BasePaperCharacter.generated.h"
 
 
@@ -30,7 +32,7 @@ namespace SpriteDirection {
 
 
 UCLASS()
-class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteObjectInterface
+class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteObjectInterface, public IDamageableInterface
 {
 	GENERATED_BODY()
 
@@ -51,10 +53,13 @@ protected:
 		class UWorld* World;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sprite, meta = (AllowPrivateAccess = "true"))
-		class UPaperCharacterAnimationComponent* AnimationComponent;
+	class UPaperCharacterAnimationComponent* AnimationComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
-		class USpriteShadowComponent* ShadowComponent;
+	class USpriteShadowComponent* ShadowComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shadow, meta = (AllowPrivateAccess = "true"))
+	class UCollissionDamageComponent*  CollissionDamageComponent;
 
 	//The object count assigned to the projectile pool on its creation.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shooting, meta = (AllowPrivateAccess = "true"))
@@ -66,11 +71,14 @@ protected:
 
 	// The default health points attributed to the enemy
 	UPROPERTY(EditAnywhere, Category = Stats, meta = (ClampMin = "10", ClampMax = "1000"))
-		int HealthPoints = 10;
+		int HealthPoints = 100;
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* PivotComponent;
 
+	// Used to prevent multiple hit events firing on collission
+	UPROPERTY(VisibleAnywhere)
+	class UBoxComponent* CollissionOverlapComponent;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
@@ -180,14 +188,16 @@ public:
 	//inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
 
 
-	UFUNCTION()
-	virtual void DealDamage(class AActor* ActorToDamage, int DamageAmount);
+	//UFUNCTION()
+	//virtual void DealDamage(class AActor* ActorToDamage, int DamageAmount); // NowHandled by IDamageableInterface
 
 #pragma region Interface Methods 
 
 	virtual FVector GetObjectFaceDirection_Implementation() const override;
 
-	virtual bool RecieveDamage_Implementation(int DamageAmount) override;
+	virtual bool RecieveDamage_Implementation(float DamageAmount, TeamOwner::ETeamOwner DamageFromTeam) override;
+
+	virtual TeamOwner::ETeamOwner GetTeamOwner_Implementation() override { return TeamOwner; };
 
 #pragma endregion
 
@@ -196,12 +206,26 @@ public:
 
 	void SetCurrentRoomBounds(const class UBoxComponent & RoomBoundsBox);
 
+	UFUNCTION(BlueprintCallable, Category = "Room" )
+		FVector	GetRoomMinBounds() { return MinMaxRoomBounds.Key;  };
+
+	UFUNCTION(BlueprintCallable, Category = "Room" )
+		FVector GetRoomMaxBounds() { return MinMaxRoomBounds.Value; };
+
+	//UFUNCTION(BlueprintCallable, Category = "Room")
+		//TPair<FVector, FVector> GetRoomBounds() { return MinMaxRoomBounds; };
+
+
 protected:
 
-	// class UBoxComponent * CurrentRoomBounds; TODO: Do we want to store a reference to the box or just the min/max?
+	TeamOwner::ETeamOwner TeamOwner;
+
+	TPair<FVector, FVector> MinMaxRoomBounds;
 
 	FVector MinRoomBounds;
 	FVector MaxRoomBounds;
+
+	class UBoxComponent* BoundingBoxRef;
 
 	class UMaterialInstanceDynamic* DynamicSpriteMaterial;
 
@@ -218,7 +242,9 @@ protected:
 
 
 
+
 	private:
+
 
 		bool bMovementControlOverridden;
 };

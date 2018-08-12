@@ -70,16 +70,20 @@ void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, A
 	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
 
 		if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
-			PlayerCharactersInRoom.Add(Character);
-			OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
 
-			auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
+			if (!PlayerCharactersInRoom.Contains(Character)) {
 
-			// Run method on Blueprint class implementation
-			OnRunRoomEvents();
+				PlayerCharactersInRoom.Add(Character);
+				OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
 
-			Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+				auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+				if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
+
+				// Run method on Blueprint class implementation
+				OnRunRoomEvents();
+
+				Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+			}
 		}
 		else if (ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor) ) { // TODO: Could change to Enemy/ NPC?
 			// TODO: Store NPC character references in array?

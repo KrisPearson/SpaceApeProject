@@ -198,21 +198,22 @@ void ABaseDoor::SetDoorState() {
 
 void ABaseDoor::ToggleDoor() {
 
+	if (TwinDoor) {
 
+		if (PlayerCharactersInRoom.Num() > 0 && !bIsLocked) { //if player is in box & is not locked then open door
+			if (!bIsOpenState) {
+				DoorAnimationTimeline.PlayFromStart();
 
-	if (PlayerCharactersInRoom.Num() > 0 && !bIsLocked) { //if player is in box & is not locked then open door
-		if (!bIsOpenState) {
-			DoorAnimationTimeline.PlayFromStart();
-			
-			if (TwinDoor) TwinDoor->DoorAnimationTimeline.PlayFromStart();
+				if (TwinDoor) TwinDoor->DoorAnimationTimeline.PlayFromStart();
+			}
 		}
-	}
-	else {
-		DoorAnimationTimeline.Reverse();
+		else {
+			DoorAnimationTimeline.Reverse();
 
 
 
-		if (TwinDoor) TwinDoor->DoorAnimationTimeline.Reverse();
+			if (TwinDoor) TwinDoor->DoorAnimationTimeline.Reverse();
+		}
 	}
 }
 

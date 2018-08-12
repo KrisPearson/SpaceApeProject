@@ -107,6 +107,8 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 	//SetOwner(GetController());
 
+	TeamOwner = TeamOwner::ETeamOwner::TO_Player;
+
 }
 
 
@@ -309,47 +311,39 @@ void APlayerPaperCharacter::ShotTimerExpired() {
 	bCanFire = true;
 }
 
-void APlayerPaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
-
-	Super::DealDamage(ActorToDamage, DamageAmount);
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
-	//if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(CharacterToDamage)) {
-		//bool isEnemyDead;
-
-		//int scoreFromDamage;
-
-		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
-		//Enemy->ReceiveDamage(DamageAmount, isEnemyDead, scoreFromDamage);
-
-		//if (isEnemyDead) {
-			//scoreFromDamage += Enemy->GetScoreValue();
-	//	}
-
-		//CurrentScore += scoreFromDamage;
-
-
-
-		// Inform the enemy of damage and check whether the enemy died as a result.
-		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
-		//	CurrentScore += ScoreValue;
-		//}
-		//else CurrentScore += scoreFromDamage;
-	//}
-
-
-	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
-
-	//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
-
-}
-
-bool APlayerPaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
-
-
-	Super::RecieveDamage_Implementation(DamageAmount);
-
-	return true;
-}
+//void APlayerPaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
+//
+//	Super::DealDamage(ActorToDamage, DamageAmount);
+//	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" DealDamage 2 param")));
+//	//if (AEnemyPaperCharacter* Enemy = Cast<AEnemyPaperCharacter>(CharacterToDamage)) {
+//		//bool isEnemyDead;
+//
+//		//int scoreFromDamage;
+//
+//		//Enemy->ReceiveDamage(EquippedWeaponComponent->GetWeaponData()->BaseWeaponDamage, isEnemyDead, scoreFromDamage);
+//		//Enemy->ReceiveDamage(DamageAmount, isEnemyDead, scoreFromDamage);
+//
+//		//if (isEnemyDead) {
+//			//scoreFromDamage += Enemy->GetScoreValue();
+//	//	}
+//
+//		//CurrentScore += scoreFromDamage;
+//
+//
+//
+//		// Inform the enemy of damage and check whether the enemy died as a result.
+//		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
+//		//	CurrentScore += ScoreValue;
+//		//}
+//		//else CurrentScore += scoreFromDamage;
+//	//}
+//
+//
+//	//GetController()->PlayerState->Score = CurrentScore; // needs storing. Could pass this to the server to validate
+//
+//	//NOTE: It isn't safe to store score on the actor, as it could potentially be cheated.
+//
+//}
 
 void APlayerPaperCharacter::MulticastPlayFireSound_Implementation() {
 	if (FireSound != nullptr) {

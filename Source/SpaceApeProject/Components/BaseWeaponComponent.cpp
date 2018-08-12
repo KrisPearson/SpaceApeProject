@@ -14,6 +14,7 @@ The BaseWeaponComponent is intended to be inherrited by Weapons in order to crea
 #include "Components/ObjectPoolComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Interfaces/SpriteObjectInterface.h"
 #include "SpriteObjects/PlayerPaperCharacter.h"
 
 /*
@@ -39,21 +40,26 @@ void UBaseWeaponComponent::BeginPlay() {
 	World = GetWorld();
 	OwningCharacter = Cast<APlayerPaperCharacter>(GetOwner());
 
-	
+	ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(GetOwner());
+	if (ObjectInterface) {
+		// Attempt to Deal damage, and check whether it was successful.
+		TeamOwner::ETeamOwner OwningTeam = ISpriteObjectInterface::Execute_GetTeamOwner(GetOwner());
 
-	if (OwningCharacter) {
-		WeaponData = FWeaponData(
-			ProjectileParticle,
-			HitParticle,
-			FireAudio,
-			HitAudio,
-			DelayBetweenShots,
-			Damage,
-			Speed
-		);
-	};
+		if (OwningCharacter) {
+			WeaponData = FWeaponData(
+				ProjectileParticle,
+				HitParticle,
+				FireAudio,
+				HitAudio,
+				DelayBetweenShots,
+				Damage,
+				Speed,
+				OwningTeam
+			);
+		};
 
-	UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
+		UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
+	}
 }
 
 // Called every frame

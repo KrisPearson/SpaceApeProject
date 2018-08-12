@@ -16,6 +16,9 @@ AEnemyPaperCharacter::AEnemyPaperCharacter() {
 
 	//AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
 
+
+
+	TeamOwner = TeamOwner::ETeamOwner::TO_EnemyNPC; //TEMP
 }
 
 void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {

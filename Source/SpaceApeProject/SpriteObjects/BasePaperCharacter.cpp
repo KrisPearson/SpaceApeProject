@@ -8,12 +8,17 @@
 #include "Components/PaperCharacterAnimationComponent.h"
 #include "Components/SpriteShadowComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/CollissionDamageComponent.h"
 #include "PaperFlipbookComponent.h"
+
+#include "Enums/TeamOwnerEnum.h"
 
 #include "Materials/MaterialInstance.h"
 
 #include "SpriteObjects/BaseProjectile.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -34,6 +39,28 @@ ABasePaperCharacter::ABasePaperCharacter() {
 	GetSprite()->SetRelativeRotation(FRotator(00.f, 90.f, CameraAngle));
 	GetSprite()->SetRelativeLocation(FVector(40.f, 0.f, 30.f));
 
+
+	TeamOwner = TeamOwner::ETeamOwner::TO_NoOwner;
+
+	FVector Origin;
+	FVector BoxExtent;
+	float SphereRadius = 0;
+
+	if (GetCapsuleComponent() != NULL) {
+		Origin = GetCapsuleComponent()->Bounds.Origin;
+		BoxExtent = GetCapsuleComponent()->Bounds.BoxExtent;
+		SphereRadius = GetCapsuleComponent()->Bounds.SphereRadius;
+	}
+
+	CollissionOverlapComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollissionOverlap"));
+	CollissionOverlapComponent->AttachTo(RootComponent);
+	CollissionOverlapComponent->SetBoxExtent(BoxExtent * 1.2f);
+	//CollissionOverlapComponent->SetRelativeLocation(Origin);
+
+	CollissionDamageComponent = CreateDefaultSubobject<UCollissionDamageComponent>(TEXT("DamageCollider"));
+	CollissionDamageComponent->InitialiseComponent(*GetCapsuleComponent(), *CollissionOverlapComponent);
+
+	
 
 	bReplicates = true;
 }
@@ -68,9 +95,11 @@ void ABasePaperCharacter::BeginPlay() {
 		for (AActor* Actor : *PoolArray) {
 
 			Cast<ABaseProjectile>(Actor)->SetWeaponData(&EquippedWeaponData);
-			Cast<ABaseProjectile>(Actor)->OnEnemyHit.AddDynamic(this, &ABasePaperCharacter::DealDamage);
+			//Cast<ABaseProjectile>(Actor)->OnEnemyHit.AddDynamic(this, &ABasePaperCharacter::DealDamage);
 			Cast<ABaseProjectile>(Actor)->SetPoolReference(ProjectilePool);
 		}
+
+
 	}
 
 	UMaterialInstance* BaseMat = static_cast<UMaterialInstance*>(GetSprite()->GetMaterial(0));
@@ -215,6 +244,8 @@ bool ABasePaperCharacter::CheckIfAlive() {
 	else return false;
 }
 
+
+
 /*
 Destroy this actor following a broadcast to the WaveManager.
 */
@@ -224,21 +255,6 @@ void ABasePaperCharacter::CharacterDeath() {
 	Destroy();
 }
 
-bool ABasePaperCharacter::RecieveDamage_Implementation(int DamageAmount) {
-
-	CurrentHealthPoints -= DamageAmount;
-
-	if (!CheckIfAlive())
-	{
-		CharacterDeath();
-	}
-	else {
-		MulticastPlayDamageFlash();
-	}
-
-	return true;
-
-}
 
 /*Informs the charatcer of a new set of room bounds.
 @param The box component from which to source the new bounds.
@@ -252,10 +268,12 @@ void ABasePaperCharacter::SetCurrentRoomBounds(const UBoxComponent & CameraBound
 
 		//UE_LOG(LogTemp, Warning, TEXT("Box Origin = %f , %f , %f"), Origin.X, Origin.Y, Origin.Z);
 
-		MinRoomBounds = FVector(Origin.X - BoxExtent.X, Origin.Y - BoxExtent.Y, Origin.Z - BoxExtent.Z);
-		MaxRoomBounds = FVector(Origin.X + BoxExtent.X, Origin.Y + BoxExtent.Y, Origin.Z + BoxExtent.Z);
 
-		//UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMin = %f , %f , %f"), CameraBoundsMin.X, CameraBoundsMin.Y, CameraBoundsMin.Z);
+
+		MinMaxRoomBounds.Key = FVector(Origin.X - BoxExtent.X, Origin.Y - BoxExtent.Y, Origin.Z - BoxExtent.Z);
+		MinMaxRoomBounds.Value = FVector(Origin.X + BoxExtent.X, Origin.Y + BoxExtent.Y, Origin.Z + BoxExtent.Z);
+
+		UE_LOG(LogTemp, Warning, TEXT("Room Bounds Minx = %f , Max X = %f"), MinMaxRoomBounds.Key.X, MinMaxRoomBounds.Value.X);
 	}
 }
 
@@ -275,8 +293,8 @@ void ABasePaperCharacter::ForceMoveToLocation(FVector TargetLocation) {
 
 	//float t = (GetMovementComponent()->GetMaxSpeed() - 0 ) / GetMovementComponent()->getAcc
 
-
-	float TimerDuratrion = DistanceToTarget / GetMovementComponent()->GetMaxSpeed();//1.f; //TODO: Calculate time to move to location
+	// TODO: Calculate time to move to location
+	float TimerDuratrion = DistanceToTarget / GetMovementComponent()->GetMaxSpeed();
 	TimerDuratrion += 0.1f;
 
 
@@ -303,21 +321,43 @@ void ABasePaperCharacter::EnableCharacterInput() {
 }
 
 
+//void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, float DamageAmount) {
+//
+//	IDamageableInterface* ObjectInterface = Cast<IDamageableInterface>(ActorToDamage);
+//
+//	if (ObjectInterface) {
+//
+//		IDamageableInterface::Execute_RecieveDamage(ActorToDamage, DamageAmount);
+//
+//	}
+//}
+
 
 #pragma region CharacterInterface Methods 
 
 
 
-void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
+bool ABasePaperCharacter::RecieveDamage_Implementation(float DamageAmount, TeamOwner::ETeamOwner DamageFromTeam) {
 
-	ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(ActorToDamage);
-	 
-	if (ObjectInterface) {
+	if (DamageFromTeam != TeamOwner) { //TODO: Refine this system (profile predefined responses?)
 
-		ISpriteObjectInterface::Execute_RecieveDamage(ActorToDamage, DamageAmount);
+		CurrentHealthPoints -= DamageAmount;
+
+		if (!CheckIfAlive())
+		{
+			CharacterDeath();
+		}
+		else {
+			MulticastPlayDamageFlash();
+		}
+
+		return true;
 
 	}
+	else return false;
 }
+
+
 
 FVector ABasePaperCharacter::GetObjectFaceDirection_Implementation() const {
 
