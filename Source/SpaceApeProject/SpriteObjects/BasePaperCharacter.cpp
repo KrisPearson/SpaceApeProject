@@ -15,6 +15,7 @@
 #include "Enums/TeamOwnerEnum.h"
 
 #include "Materials/MaterialInstance.h"
+#include "AIController.h"
 
 #include "SpriteObjects/BaseProjectile.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -40,8 +41,6 @@ ABasePaperCharacter::ABasePaperCharacter() {
 	GetSprite()->SetRelativeLocation(FVector(40.f, 0.f, 30.f));
 
 
-	TeamOwner = TeamOwner::ETeamOwner::TO_NoOwner;
-
 	FVector Origin;
 	FVector BoxExtent;
 	float SphereRadius = 0;
@@ -61,6 +60,10 @@ ABasePaperCharacter::ABasePaperCharacter() {
 	CollissionDamageComponent->InitialiseComponent(*GetCapsuleComponent(), *CollissionOverlapComponent);
 
 	
+	//TeamOwner = TeamOwner::ETeamOwner::TO_NoOwner;
+	SetGenericTeamId(1);
+
+	if (Cast<AAIController>(GetController()) ) Cast<AAIController>(GetController())->SetGenericTeamId(GetGenericTeamId());
 
 	bReplicates = true;
 }
@@ -116,6 +119,27 @@ void ABasePaperCharacter::BeginPlay() {
 
 	//GetController()->SetIgnoreMoveInput(true);
 
+	//IDamageableInterface* ObjectInterfaceTwo = Cast<IDamageableInterface>(this);
+	//if (ObjectInterfaceTwo) {
+	//	IDamageableInterface::Execute_RecieveDamage(this, 2, GetTeamOwner());
+	//}
+
+
+	//IGenericTeamAgentInterface* ObjectInterface = Cast<IGenericTeamAgentInterface>(this);
+	//if (ObjectInterface) {
+
+	//	SetGenericTeamId(IGenericTeamAgentInterface::Execute_GetGenericTeamId(this));
+	//	IGenericTeamAgentInterface::Execute_GetGenericTeamId(this);
+	//	//ObjectInterface->GetGenericTeamId();
+
+	//	//if (IDamageableInterface::Execute_RecieveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage, (*WeaponData)->OwningTeam)) {
+
+	//}
+
+
+	SetGenericTeamId(FGenericTeamId(1));
+
+	UE_LOG(LogTemp, Warning, TEXT("teamID BaseCharacter = %d"), GetGenericTeamId().GetId());
 }
 
 void ABasePaperCharacter::Tick(float DeltaTime) {
@@ -125,19 +149,14 @@ void ABasePaperCharacter::Tick(float DeltaTime) {
 	
 	UpdateIsShooting();
 
-	if (bInputDisabled) { //TEMP TODO:move to movement component
-	//	// Clamp max size so that (X=1, Y=1) doesn't cause faster movement in diagonal directions
-	//	FVector MoveDirection = FVector(CurrentVerticalMoveValue, CurrentHorizontalMoveValue, 0.f).GetClampedToMaxSize(1.0f);
+	//HandleMovement(DeltaTime);
 
-	//	// Calculate  movement
-	//	const FVector Movement = MoveDirection * /*MoveSpeed*/10 * DeltaTime;
-	//	if (Movement.SizeSquared() > 0.0f) {
-	//		//Apply Movement
-			AddMovementInput(OverrideDirection, 1);
+	HandleShooting();
 
-	//		//UE_LOG(LogTemp, Warning, TEXT("HandleMovement: %f , %f"), CurrentVerticalMoveValue, CurrentHorizontalMoveValue);
-	//	}
-	}
+
+	// TEMP: Used to force move in a direction  TODO:move to movement component
+	if (bInputDisabled) AddMovementInput(OverrideDirection, 1); 
+
 }
 
 
@@ -166,6 +185,21 @@ void ABasePaperCharacter::ChangeWeapon(TSubclassOf<UBaseWeaponComponent> _NewWea
 		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT(" GetWeaponData Speed =  %f. Is Server = %s"), NewWeaponData.BaseProjectileSpeed, Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
 	}
 
+}
+
+void ABasePaperCharacter::HandleShooting() {
+
+	if (bIsShooting) {
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" bIsShooting = true")));
+
+		if (Role == ROLE_AutonomousProxy) {
+			ServerShootWeapon(/*CurrentShootingDirection*/);
+		}
+		else if (Role == ROLE_Authority) {
+			ShootWeapon(/*CurrentShootingDirection*/); // TODO: Test whether the server player needs to call this
+		}
+	}
 }
 
 void ABasePaperCharacter::UpdateFaceDirection() {
@@ -202,6 +236,11 @@ void ABasePaperCharacter::UpdateFaceDirection() {
 			FaceDirectionVector = SpriteDirection::Left;
 		}
 	}
+}
+
+void ABasePaperCharacter::ShootInDirection(FVector DirectionToShoot) {
+	ServerSetCurrentShootingDirection( DirectionToShoot);
+	CurrentHorizontalShootValue = 1;
 }
 
 /* Establishes whether the character is shooting and, if so, replicates the bIsShooting property across to all players */
@@ -247,6 +286,19 @@ bool ABasePaperCharacter::CheckIfAlive() {
 
 
 /*
+Sends a request to the WeaponComponent to shoot
+*/
+void ABasePaperCharacter::ShootWeapon() {
+	if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(CurrentShootingDirection);
+}
+
+void ABasePaperCharacter::ServerShootWeapon_Implementation() {
+	if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(CurrentShootingDirection);
+}
+
+
+
+/*
 Destroy this actor following a broadcast to the WaveManager.
 */
 void ABasePaperCharacter::CharacterDeath() {
@@ -264,11 +316,6 @@ void ABasePaperCharacter::SetCurrentRoomBounds(const UBoxComponent & CameraBound
 		FVector BoxExtent = CameraBoundsBox.GetScaledBoxExtent();
 
 		FVector Origin = CameraBoundsBox.GetComponentLocation();
-
-
-		//UE_LOG(LogTemp, Warning, TEXT("Box Origin = %f , %f , %f"), Origin.X, Origin.Y, Origin.Z);
-
-
 
 		MinMaxRoomBounds.Key = FVector(Origin.X - BoxExtent.X, Origin.Y - BoxExtent.Y, Origin.Z - BoxExtent.Z);
 		MinMaxRoomBounds.Value = FVector(Origin.X + BoxExtent.X, Origin.Y + BoxExtent.Y, Origin.Z + BoxExtent.Z);
@@ -337,9 +384,11 @@ void ABasePaperCharacter::EnableCharacterInput() {
 
 
 
-bool ABasePaperCharacter::RecieveDamage_Implementation(float DamageAmount, TeamOwner::ETeamOwner DamageFromTeam) {
+bool ABasePaperCharacter::RecieveDamage_Implementation(float DamageAmount, FGenericTeamId DamageFromTeam) {
 
-	if (DamageFromTeam != TeamOwner) { //TODO: Refine this system (profile predefined responses?)
+	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::RecieveDamage GenericTeamId = %d"), TeamId.GetId());
+
+	if (DamageFromTeam != TeamId) { //TODO: Refine this system (profile predefined responses?)
 
 		CurrentHealthPoints -= DamageAmount;
 
@@ -355,6 +404,15 @@ bool ABasePaperCharacter::RecieveDamage_Implementation(float DamageAmount, TeamO
 
 	}
 	else return false;
+}
+
+void ABasePaperCharacter::SetGenericTeamId(const FGenericTeamId & TeamID) {
+	TeamId = TeamID;
+	if (auto* AiController = Cast<AAIController>(GetController())) AiController->SetGenericTeamId(TeamID);
+}
+
+FGenericTeamId ABasePaperCharacter::GetGenericTeamId() const {
+	return TeamId;
 }
 
 

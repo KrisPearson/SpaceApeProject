@@ -6,6 +6,7 @@
 #include "PaperCharacter.h"
 #include "Interfaces/SpriteObjectInterface.h"
 #include "Interfaces/DamageableInterface.h"
+#include "Classes/GenericTeamAgentInterface.h"
 #include "Enums/TeamOwnerEnum.h"
 #include "BasePaperCharacter.generated.h"
 
@@ -32,7 +33,7 @@ namespace SpriteDirection {
 
 
 UCLASS()
-class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteObjectInterface, public IDamageableInterface
+class SPACEAPEPROJECT_API ABasePaperCharacter : public APaperCharacter, public ISpriteObjectInterface, public IDamageableInterface, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -82,10 +83,10 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
-		class USoundBase* FireSound; // TODO: Move to AudioHandler
+		class USoundBase* FireSound; // TODO: Move to AudioHandler (?)
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio, meta = (AllowPrivateAccess = "true"))
-		class USoundBase* HitSound; // TODO: Move to AudioHandler
+		class USoundBase* HitSound; // TODO: Move to AudioHandler (?)
 
 
 	UPROPERTY()
@@ -95,7 +96,7 @@ protected:
 
 	void ChangeWeapon(TSubclassOf<class UBaseWeaponComponent> _NewWeapon);
 
-	virtual void HandleShooting() { check(0 && "HandleShooting method requires override  method")};
+	virtual void HandleShooting();
 
 	virtual void HandleMovement(float DeltaTime) { check(0 && "HandleMovement method requires override  method") };
 
@@ -110,6 +111,9 @@ protected:
 
 	UPROPERTY(Replicated)
 		FVector CurrentShootingDirection;
+
+	UFUNCTION(BlueprintCallable)
+		void ShootInDirection(FVector DirectionToShoot);
 
 	UFUNCTION(Reliable, Server, WithValidation)
 		void ServerSetCurrentShootingDirection(FVector NewDirection);
@@ -168,6 +172,8 @@ protected:
 	FTimerHandle MovementOverrideTimer;
 	bool bInputDisabled = false;
 
+
+	// Used when forcing a character to move in a direction
 	FVector OverrideDirection;
 
 	UFUNCTION()
@@ -195,9 +201,15 @@ public:
 
 	virtual FVector GetObjectFaceDirection_Implementation() const override;
 
-	virtual bool RecieveDamage_Implementation(float DamageAmount, TeamOwner::ETeamOwner DamageFromTeam) override;
+	virtual bool RecieveDamage_Implementation(float DamageAmount, FGenericTeamId DamageFromTeam) override;
 
-	virtual TeamOwner::ETeamOwner GetTeamOwner_Implementation() override { return TeamOwner; };
+	//virtual TeamOwner::ETeamOwner GetTeamOwner_Implementation() override { return TeamOwner; }; //TODO: Remove
+
+	/** Assigns Team Agent to given TeamID */
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
+
+	/** Retrieve team identifier in form of FGenericTeamId */
+	virtual FGenericTeamId GetGenericTeamId() const override;
 
 #pragma endregion
 
@@ -218,7 +230,12 @@ public:
 
 protected:
 
-	TeamOwner::ETeamOwner TeamOwner;
+	FGenericTeamId TeamId;
+
+	//TeamOwner::ETeamOwner TeamOwner;
+
+
+
 
 	TPair<FVector, FVector> MinMaxRoomBounds;
 
@@ -234,17 +251,32 @@ protected:
 	void MulticastPlayDamageFlash_Implementation();
 
 
-
 	UFUNCTION()
 		void CharacterDeath();
 
 		bool CheckIfAlive();
 
 
+		UFUNCTION(BlueprintCallable)
+			void PullTrigger() { bIsShooting = true; }; //TODO: Might not need to use this method. Could instead set CurrentShootDirection?
 
+
+		UFUNCTION(BlueprintCallable)
+			void ReleaseTrigger() { bIsShooting = false; };
+
+		//UFUNCTION(BlueprintCallable)
+		//	void ShootInDirection(EFaceDirection DirectionToShoot);
 
 	private:
 
+		void ShootWeapon();
+
+		UFUNCTION(Reliable, Server, WithValidation)
+			void ServerShootWeapon();
+		void ServerShootWeapon_Implementation();
+		bool ServerShootWeapon_Validate() { return true; };
+
 
 		bool bMovementControlOverridden;
+
 };

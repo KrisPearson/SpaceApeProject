@@ -107,7 +107,9 @@ APlayerPaperCharacter::APlayerPaperCharacter() {
 
 	//SetOwner(GetController());
 
-	TeamOwner = TeamOwner::ETeamOwner::TO_Player;
+	//TeamOwner = TeamOwner::ETeamOwner::TO_Player;
+
+	TeamId = FGenericTeamId(0);
 
 }
 
@@ -137,7 +139,7 @@ void APlayerPaperCharacter::Tick(float DeltaTime) {
 
 
 	HandleMovement(DeltaTime);
-	HandleShooting();
+	//HandleShooting(); // Moved to baseCharacter
 
 	//if (LastUpdatedMovingDirection != CurrentMovingDirection && Role == ROLE_AutonomousProxy) {
 	//	ServerModifyMoveDirection(this, CurrentMovingDirection);
@@ -207,30 +209,31 @@ void APlayerPaperCharacter::HandleMovement(float DeltaTime) {
 
 
 
-void APlayerPaperCharacter::HandleShooting() {
-
-	//else if (Role == ROLE_AutonomousProxy)
-
-	//if (CurrentHorizontalShootValue != 0 || CurrentVerticalShootValue != 0) bIsShooting = true;
-	//else bIsShooting = false;
-
-	//Twin stick shooting direction
-	//const float FireForwardValue = GetInputAxisValue(FireUpBinding);
-	//const float FireRightValue = GetInputAxisValue(FireRightBinding);
-
-	if (bIsShooting) {
-
-		if (bCanFire == true) {
-			if (Role == ROLE_AutonomousProxy) {
-				ServerShootInDirection(CurrentShootingDirection);
-			}
-			else if (Role == ROLE_Authority) {
-				ShootInDirection(CurrentShootingDirection); // TODO: Test whether we need this fot the server player
-			}
-		}
-
-	}
-}
+//void APlayerPaperCharacter::HandleShooting() {
+//
+//
+//	//else if (Role == ROLE_AutonomousProxy)
+//
+//	//if (CurrentHorizontalShootValue != 0 || CurrentVerticalShootValue != 0) bIsShooting = true;
+//	//else bIsShooting = false;
+//
+//	//Twin stick shooting direction
+//	//const float FireForwardValue = GetInputAxisValue(FireUpBinding);
+//	//const float FireRightValue = GetInputAxisValue(FireRightBinding);
+//
+//	if (bIsShooting) {
+//
+//		if (bCanFire == true) {
+//			if (Role == ROLE_AutonomousProxy) {
+//				ServerShootInDirection(CurrentShootingDirection);
+//			}
+//			else if (Role == ROLE_Authority) {
+//				ShootInDirection(CurrentShootingDirection); // TODO: Test whether the server player needs to call this
+//			}
+//		}
+//
+//	}
+//}
 
 void APlayerPaperCharacter::MoveUp(float Value) {
 	CurrentVerticalMoveValue = Value;
@@ -266,50 +269,49 @@ void APlayerPaperCharacter::ShootRight(float Value) {
 }
 
 
-void APlayerPaperCharacter::ShootInDirection(FVector Direction) {
-	if (bCanFire == true) {
+//void APlayerPaperCharacter::ShootInDirection(FVector Direction) {
+//	if (bCanFire == true) {
+//
+//		if (World != NULL) {
+//
+//			//TODO: Move timer & audio(?) to WeaponComponent 
+//
+//			if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(Direction);
+//			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
+//
+//			bCanFire = false;
+//			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate() );
+//		}
+//		if (FireSound != nullptr) {
+//			MulticastPlayFireSound();
+//		}
+//	}
+//}
+//
+//void APlayerPaperCharacter::ServerShootInDirection_Implementation(FVector CurrentShootingDirection) {
+//	//UE_LOG(LogTemp, Warning, TEXT("ServerShootInDirection_Implementation"));
+//	if (bCanFire == true) {
+//
+//		if (World != NULL) {
+//
+//			//TODO: Move timer & audio(?) to WeaponComponent 
+//
+//
+//			if (EquippedWeaponComponent!= nullptr) EquippedWeaponComponent->Shoot(CurrentShootingDirection);
+//			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
+//
+//			bCanFire = false;
+//			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate());
+//		}
+//		if (FireSound != nullptr) {
+//			MulticastPlayFireSound();
+//		}
+//	}
+//}
 
-		if (World != NULL) {
-
-			const FRotator FireRotation = Direction.Rotation();
-			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(FVector(0.5f, 0,0)/*GunOffset*/);
-
-			if (EquippedWeaponComponent != nullptr) EquippedWeaponComponent->Shoot(Direction);
-			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
-
-			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate() );
-		}
-		if (FireSound != nullptr) {
-			MulticastPlayFireSound();
-		}
-	}
-}
-
-void APlayerPaperCharacter::ServerShootInDirection_Implementation(FVector Direction) {
-	//UE_LOG(LogTemp, Warning, TEXT("ServerShootInDirection_Implementation"));
-	if (bCanFire == true) {
-
-		if (World != NULL) {
-
-			const FRotator FireRotation = Direction.Rotation();
-			const FVector SpawnLocation = GetActorLocation() + FireRotation.RotateVector(FVector(0.5f, 0, 0)/*GunOffset*/); // TODO: Utilise sockets for spawn location? How would sockets be updated to match rotation?
-
-			if (EquippedWeaponComponent!= nullptr) EquippedWeaponComponent->Shoot(Direction);
-			else UE_LOG(LogTemp, Warning, TEXT("EquippedWeaponComponent == nullptr"));
-
-			bCanFire = false;
-			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &APlayerPaperCharacter::ShotTimerExpired, EquippedWeaponComponent->GetFireRate());
-		}
-		if (FireSound != nullptr) {
-			MulticastPlayFireSound();
-		}
-	}
-}
-
-void APlayerPaperCharacter::ShotTimerExpired() {
-	bCanFire = true;
-}
+//void APlayerPaperCharacter::ShotTimerExpired() {
+//	bCanFire = true;
+//}
 
 //void APlayerPaperCharacter::DealDamage(AActor * ActorToDamage, int DamageAmount) {
 //

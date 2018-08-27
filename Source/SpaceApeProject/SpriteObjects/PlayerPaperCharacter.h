@@ -67,7 +67,7 @@ private:
 	bool bCanFire = true;
 
 	/** Handle for management of ShotTimerExpired timer */
-	FTimerHandle TimerHandle_ShotTimerExpired; // TODO: Move to weapon component ?
+	//FTimerHandle TimerHandle_ShotTimerExpired; // Moved to WeaponComponent
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
@@ -94,7 +94,7 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	virtual void HandleShooting() override;
+	//virtual void HandleShooting() override; // Moved to BaseCharacter
 
 	virtual void HandleMovement(float DeltaTime) override;
 
@@ -120,14 +120,14 @@ protected:
 	float CurrentHorizontalMoveValue = 0;
 	float CurrentVerticalMoveValue = 0;
 
-	void ShootInDirection(FVector Direction);
+	//void ShootInDirection(FVector Direction);
 
-	UFUNCTION(Reliable, Server, WithValidation)
-		void ServerShootInDirection(FVector Direction);
-	void ServerShootInDirection_Implementation(FVector Direction);
-	bool ServerShootInDirection_Validate(FVector Direction) { return true;  };
+	//UFUNCTION(Reliable, Server, WithValidation)
+	//	void ServerShootInDirection(FVector Direction);
+	//void ServerShootInDirection_Implementation(FVector Direction);
+	//bool ServerShootInDirection_Validate(FVector Direction) { return true;  };
 
-	void ShotTimerExpired();
+	//void ShotTimerExpired();
 
 	//virtual void DealDamage( AActor* ActorToDamage, int DamageAmount) override;
 

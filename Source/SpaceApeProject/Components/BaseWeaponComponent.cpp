@@ -15,7 +15,7 @@ The BaseWeaponComponent is intended to be inherrited by Weapons in order to crea
 #include "Particles/ParticleSystem.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Interfaces/SpriteObjectInterface.h"
-#include "SpriteObjects/PlayerPaperCharacter.h"
+#include "SpriteObjects/BasePaperCharacter.h"
 
 /*
 The Player Weapon Component dictates:
@@ -38,28 +38,21 @@ void UBaseWeaponComponent::BeginPlay() {
 	Super::BeginPlay();
 
 	World = GetWorld();
-	OwningCharacter = Cast<APlayerPaperCharacter>(GetOwner());
+	OwningCharacter = Cast<ABasePaperCharacter>(GetOwner());
 
-	ISpriteObjectInterface* ObjectInterface = Cast<ISpriteObjectInterface>(GetOwner());
-	if (ObjectInterface) {
-		// Attempt to Deal damage, and check whether it was successful.
-		TeamOwner::ETeamOwner OwningTeam = ISpriteObjectInterface::Execute_GetTeamOwner(GetOwner());
-
-		if (OwningCharacter) {
-			WeaponData = FWeaponData(
-				ProjectileParticle,
-				HitParticle,
-				FireAudio,
-				HitAudio,
-				DelayBetweenShots,
-				Damage,
-				Speed,
-				OwningTeam
-			);
-		};
-
-		UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
+	if (OwningCharacter) {
+		WeaponData = FWeaponData(
+			ProjectileParticle,
+			HitParticle,
+			FireAudio,
+			HitAudio,
+			DelayBetweenShots,
+			Damage,
+			Speed
+		);
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("WeaponData. Delay = : %f"), DelayBetweenShots);
 }
 
 // Called every frame
@@ -75,22 +68,37 @@ Should be called by the server by an RPC when networking.
 */
 void UBaseWeaponComponent::Shoot(FVector _FireDirection) {
 
-	const FRotator FireRotation = _FireDirection.Rotation();
+	if (bReadyToFire) {
 
-	FVector GunOffset = FVector(0.f, 0.f, -30.f);
+		const FRotator FireRotation = _FireDirection.Rotation();
 
-	const FVector SpawnLocation = GetOwner()->GetActorLocation() + FireRotation.RotateVector(GunOffset);
+		FVector GunOffset = FVector(0.f, 0.f, -30.f);
 
-	ABaseProjectile* Projectile = Cast<ABaseProjectile>(PlayerProjectilePoolRef->GetReusableReference());
+		const FVector SpawnLocation = GetOwner()->GetActorLocation() + FireRotation.RotateVector(GunOffset);
 
-	if (Projectile != nullptr) {
-		CheckAndUpdateProjectile(Projectile);
-		Projectile->SetProjectileLocationAndDirection(SpawnLocation, _FireDirection, true);
+		ABaseProjectile* Projectile = Cast<ABaseProjectile>(PlayerProjectilePoolRef->GetReusableReference());
+
+		FProjectileLaunchData LaunchData(SpawnLocation, _FireDirection, OwningCharacter->GetGenericTeamId());
+
+		if (Projectile != nullptr) {
+			CheckAndUpdateProjectile(Projectile);
+			Projectile->LaunchProjectile(LaunchData);
+
+			//Projectile->SetProjectileLocationAndDirection(SpawnLocation, _FireDirection, true);
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("UBaseWeaponComponent::Shoot() Projectile is nullptr."));
+		}
+
+		bReadyToFire = false;
+		if (UWorld* World = GetWorld()) {
+			World->GetTimerManager().SetTimer(TimerHandle_ShotTimerExpired, this, &UBaseWeaponComponent::ShotTimerExpired, WeaponData.WeaponFireRate);
+		}
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("UBaseWeaponComponent::Shoot() Projectile is nullptr."));
-	}
+}
 
+void UBaseWeaponComponent::ShotTimerExpired() {
+	bReadyToFire = true;
 }
 
 UObjectPoolComponent * UBaseWeaponComponent::GetObjectPoolReference() {

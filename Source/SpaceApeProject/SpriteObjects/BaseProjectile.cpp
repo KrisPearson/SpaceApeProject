@@ -83,7 +83,7 @@ void ABaseProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 // OnHit should be used to terminate the projectile when collising with world object, rather than dealing damage.
 void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
-	UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile::OnHit  "));
+	//UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile::OnHit  "));
 
 
 	if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
@@ -136,15 +136,17 @@ void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UP
 
 void ABaseProjectile::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) {
 	
-	UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile ::OnComponentEnterTrigger  "));
+	//UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile ::OnComponentEnterTrigger  "));
 
 	IDamageableInterface* ObjectInterface = Cast<IDamageableInterface>(OtherActor);
 	if (ObjectInterface) {
 
 		if (WeaponData != nullptr) {
 
+			UE_LOG(LogTemp, Warning, TEXT("ABaseProjectile::OnComponentEnterTrigge GenericTeamId = %d"), OwningTeamId.GetId());
+
 			// Attempt to Deal damage, and check whether it was successful.
-			if ( IDamageableInterface::Execute_RecieveDamage( OtherActor, (*WeaponData)->BaseWeaponDamage, (*WeaponData)->OwningTeam ) ){
+			if ( IDamageableInterface::Execute_RecieveDamage( OtherActor, (*WeaponData)->BaseWeaponDamage, OwningTeamId) ){
 
 				/*
 				if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
@@ -268,6 +270,43 @@ void ABaseProjectile::SetProjectileLocationAndDirection(FVector _Loc, FVector _V
 	}
 }
 
+/*
+Updates the projectiles location and velocity across the network.
+*/
+void ABaseProjectile::MulticastSetLocationAndVelocityDirection_Implementation(FVector _Loc, FVector _Vel, bool _ToggleEnabled) {
+	ToggleEnabled(_ToggleEnabled); // re-enable movement component and restart particle system.
+	SetActorLocation(_Loc);	// set the location of the projectile on the client(s) and server
+	ProjectileMovement->Velocity = _Vel * CurrentMoveSpeed;
+}
+
+
+
+/*
+Updates the location and velocity of the projectile.
+This is the intended method for firing the projectile from the weapon component.
+*/
+void ABaseProjectile::LaunchProjectile(FProjectileLaunchData LaunchData) {
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" SetProjectileLocationAndDirection. Server =: %s"), Role == ROLE_Authority ? TEXT("True") : TEXT("False")));
+	if (Role == ROLE_Authority) {
+		//UE_LOG(LogTemp, Log, TEXT(" SetProjectileLocationAndDirection, %f %f  %f"), _Loc.X, _Loc.Y, _Loc.Z);
+		MulticastLaunchProjectile(LaunchData.Location, LaunchData.Direction, LaunchData.TeamId);
+	}
+}
+
+/*
+Updates the projectiles location and velocity across the network.
+*/
+void ABaseProjectile::MulticastLaunchProjectile_Implementation(FVector _Loc, FVector _Vel, FGenericTeamId OwnerTeamID) {
+	OwningTeamId = OwnerTeamID;
+	ToggleEnabled(true); // re-enable movement component and restart particle system.
+	SetActorLocation(_Loc);	// set the location of the projectile on the client(s) and server
+	ProjectileMovement->Velocity = _Vel * CurrentMoveSpeed;
+}
+
+
+
+
+
 void ABaseProjectile::PassNewWeaponData(FWeaponData _NewWeaponData, int _NewWeaponDataID) {
 
 	//UE_LOG(LogTemp, Log, TEXT(" PassNewWeaponData old id = %d. new id = %d"), WeaponDataID, _NewWeaponDataID);
@@ -324,14 +363,6 @@ void ABaseProjectile::MulticastAssignWeaponDataValues_Implementation(UParticleSy
 	//ProjectileDamage = _BaseWeaponDamage;
 	CurrentMoveSpeed = _NewSpeed;
 
-}
-/*
-Updates the projectiles location and velocity across the network.
-*/
-void ABaseProjectile::MulticastSetLocationAndVelocityDirection_Implementation(FVector _Loc, FVector _Vel, bool _ToggleEnabled) {
-	ToggleEnabled(_ToggleEnabled); // re-enable movement component and restart particle system.
-	SetActorLocation(_Loc);	// set the location of the projectile on the client(s) and server
-	ProjectileMovement->Velocity = _Vel * CurrentMoveSpeed;
 }
 
 void ABaseProjectile::ResetProjectile() {

@@ -51,7 +51,7 @@ protected:
 
 	FWeaponData WeaponData;
 
-	class APlayerPaperCharacter* OwningCharacter;
+	class ABasePaperCharacter* OwningCharacter;
 
 	UWorld* World;
 
@@ -76,7 +76,15 @@ public:
 
 	FWeaponData* GetWeaponData() { return &WeaponData; } // TODO: Should WeaponData be private or const?
 
+private:
 
+	/* Timer for controlling fire rate */
+	FTimerHandle TimerHandle_ShotTimerExpired;
+
+	/* Sets the weapon as ReadyToFire. Called by the TimerHandle*/
+	void ShotTimerExpired();
+
+	bool bReadyToFire = true;
 };
 
 

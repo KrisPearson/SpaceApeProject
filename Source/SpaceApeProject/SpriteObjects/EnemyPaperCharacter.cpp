@@ -18,7 +18,8 @@ AEnemyPaperCharacter::AEnemyPaperCharacter() {
 
 
 
-	TeamOwner = TeamOwner::ETeamOwner::TO_EnemyNPC; //TEMP
+	//TeamOwner = TeamOwner::ETeamOwner::TO_EnemyNPC; //TEMP
+	//Cast<AAIController>(GetController())->GetGenericTeamId();
 }
 
 void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
@@ -32,5 +33,6 @@ void AEnemyPaperCharacter::BeginPlay() {
 
 	World = GetWorld();
 
-
+	// Sets the Enemy Characters to team 2 // TODO: Predefine some team values
+	SetGenericTeamId(FGenericTeamId(2));
 }

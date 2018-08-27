@@ -5,9 +5,22 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Structs/WeaponData.h"
+//#include "Classes/GenericTeamAgentInterface.h"
+
 #include "BaseProjectile.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHit, AActor*, _Enemy, int, _Amount);
+
+struct FProjectileLaunchData {
+	FProjectileLaunchData(FVector _Location, FVector _Direction, FGenericTeamId _TeamId) {
+		Location = _Location;
+		Direction = _Direction;
+		TeamId = _TeamId;
+	}
+	FVector Location;
+	FVector Direction;
+	FGenericTeamId TeamId;
+};
 
 UCLASS()
 class SPACEAPEPROJECT_API ABaseProjectile : public AActor
@@ -82,6 +95,16 @@ public:
 		void MulticastSetLocationAndVelocityDirection(FVector _Loc, FVector _Vel, bool _ToggleEnabled);
 	void MulticastSetLocationAndVelocityDirection_Implementation(FVector _Loc, FVector _Vel, bool _ToggleEnabled);
 
+
+
+	void LaunchProjectile(FProjectileLaunchData LaunchData);
+
+	UFUNCTION(NetMulticast, Reliable)
+		void MulticastLaunchProjectile(FVector _Loc, FVector _Vel, FGenericTeamId OwnerTeamID);
+	void MulticastLaunchProjectile_Implementation(FVector _Loc, FVector _Vel, FGenericTeamId OwnerTeamID);
+
+
+
 	void ResetProjectile();
 
 	inline void SetWeaponData(FWeaponData** _WeaponData) { WeaponData = _WeaponData; };
@@ -112,6 +135,8 @@ private:
 
 	// Points towards the WeaponData pointer contained in the owning PlayerCharacter object.
 	FWeaponData** WeaponData;
+
+	FGenericTeamId OwningTeamId;
 
 	inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
 		//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "Enums/TeamOwnerEnum.h"
+#include "Classes/GenericTeamAgentInterface.h"
 #include "DamageableInterface.generated.h"
 
 // This class does not need to be modified.
@@ -22,6 +23,6 @@ class SPACEAPEPROJECT_API IDamageableInterface {
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Character")
-		bool RecieveDamage(/*class ABasePaperCharacter* CharacterToDamage, */float DamageAmount, TeamOwner::ETeamOwner DamageFromTeam);
+		bool RecieveDamage(/*class ABasePaperCharacter* CharacterToDamage, */float DamageAmount, FGenericTeamId DamageFromTeam);
 	
 };
