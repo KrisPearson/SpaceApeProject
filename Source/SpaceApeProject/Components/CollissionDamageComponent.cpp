@@ -3,6 +3,7 @@
 #include "CollissionDamageComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Classes/GenericTeamAgentInterface.h"
 #include "Interfaces/DamageableInterface.h"
 
 // Sets default values for this component's properties
@@ -43,14 +44,15 @@ void UCollissionDamageComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 void UCollissionDamageComponent::OnHit(UPrimitiveComponent * HitComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, FVector NormalImpulse, const FHitResult & Hit) {
 	IDamageableInterface* ObjectInterface = Cast<IDamageableInterface>(OtherActor);
-
-	if (ObjectInterface) {
+	IGenericTeamAgentInterface* TeamInterface = Cast<IGenericTeamAgentInterface>(GetOwner());
+	if (ObjectInterface && TeamInterface) {
 		if (!ActorsCollidedWith.Contains(OtherActor)) {
 
 
 			UE_LOG(LogTemp, Warning, TEXT(" ABasePaperCharacter::OnHit  "));
 
-			IDamageableInterface::Execute_RecieveDamage(OtherActor, CollissionDamage, TeamOwner::ETeamOwner::TO_NoOwner); // TODO GetOwnerDamage
+
+			IDamageableInterface::Execute_ReceiveDamage(OtherActor, CollissionDamage, GetOwner(), TeamInterface->GetGenericTeamId() ); // TODO GetOwnerDamage
 
 			ActorsCollidedWith.Add(OtherActor);
 

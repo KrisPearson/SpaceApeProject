@@ -103,7 +103,7 @@ void ABaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UP
 	//	if (WeaponData != nullptr) {
 
 	//		// Attempt to Deal damage, and check whether it was successful.
-	//		if (IDamageableInterface::Execute_RecieveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage)) {
+	//		if (IDamageableInterface::Execute_ReceiveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage)) {
 
 	//			if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
 	//			if (HitEffectParticle != nullptr) { HitEffectParticle->ActivateSystem(true); }
@@ -143,10 +143,10 @@ void ABaseProjectile::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedCo
 
 		if (WeaponData != nullptr) {
 
-			UE_LOG(LogTemp, Warning, TEXT("ABaseProjectile::OnComponentEnterTrigge GenericTeamId = %d"), OwningTeamId.GetId());
+			//UE_LOG(LogTemp, Warning, TEXT("ABaseProjectile::OnComponentEnterTrigge GenericTeamId = %d"), OwningTeamId.GetId());
 
 			// Attempt to Deal damage, and check whether it was successful.
-			if ( IDamageableInterface::Execute_RecieveDamage( OtherActor, (*WeaponData)->BaseWeaponDamage, OwningTeamId) ){
+			if ( IDamageableInterface::Execute_ReceiveDamage( OtherActor, (*WeaponData)->BaseWeaponDamage, FiringActor, OwningTeamId) ){
 
 				/*
 				if (HitSoundEffect != nullptr) { UGameplayStatics::PlaySound2D(this, HitSoundEffect); }
@@ -166,7 +166,7 @@ void ABaseProjectile::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedCo
 
 			}
 			else {
-				UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile ::OnComponentEnterTrigger  Unable to Deal damage  "));
+				//UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile ::OnComponentEnterTrigger  Unable to Deal damage  "));
 			}
 		}
 		//UE_LOG(LogTemp, Warning, TEXT(" ABaseProjectile ::OnComponentEnterTrigger  "));
@@ -177,7 +177,7 @@ void ABaseProjectile::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedCo
 		//	
 		//		if (ObjectInterface) {
 		//	
-		//			IDamageableInterface::Execute_RecieveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage);
+		//			IDamageableInterface::Execute_ReceiveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage);
 		//	
 		//		}
 		//}

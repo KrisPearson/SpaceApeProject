@@ -2,16 +2,16 @@
 
 #include "ChooseRandomLocationInBounds.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "SpriteObjects//BasePaperCharacter.h"
+#include "SpriteObjects/BasePaperCharacter.h"
 #include "AIController.h"
 
 EBTNodeResult::Type UChooseRandomLocationInBounds::ExecuteTask(UBehaviorTreeComponent & OwnerComp, uint8 * NodeMemory) {
 
-	auto Controller = OwnerComp.GetAIOwner(); // ->GetBlackboardComponent()->SetValueAsVector()
+	auto Controller = OwnerComp.GetAIOwner(); 
 	auto ControlledPawn = Controller->GetPawn();
 	auto Character = Cast<ABasePaperCharacter>(ControlledPawn);
 
-	FVector MaxBounds =Character->GetRoomMaxBounds();
+	FVector MaxBounds = Character->GetRoomMaxBounds();
 	FVector MinBounds = Character->GetRoomMinBounds();
 
 	auto BlackboardComp = OwnerComp.GetBlackboardComponent();

@@ -334,7 +334,7 @@ void APlayerPaperCharacter::ShootRight(float Value) {
 //
 //
 //		// Inform the enemy of damage and check whether the enemy died as a result.
-//		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy recieve damage could return the damage done (int) in order to add that to the score
+//		//if (Enemy->ReceiveDamage(PlayerProjectileDamag EquippedWeaponComponent->GetWeaponData().BaseWeaponDamage, isEnemyDead, scoreFromDamage)) { // enemy Receive damage could return the damage done (int) in order to add that to the score
 //		//	CurrentScore += ScoreValue;
 //		//}
 //		//else CurrentScore += scoreFromDamage;

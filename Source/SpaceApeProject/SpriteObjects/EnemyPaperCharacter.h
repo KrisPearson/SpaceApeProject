@@ -39,8 +39,10 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public ABasePaperCharacter
 		int SpawnCost = 1;
 
 
-	UPROPERTY(EditAnywhere, Category = Behaviour)
-		class UBehaviorTree* BotBehavior;
+	//UPROPERTY(EditAnywhere, Category = Behaviour)
+	//	class UBehaviorTree* BotBehavior;
+
+
 
 
 	//UFUNCTION()
@@ -56,6 +58,9 @@ class SPACEAPEPROJECT_API AEnemyPaperCharacter : public ABasePaperCharacter
 		inline int GetSpawnCost() { return SpawnCost;  };
 
 public:
+	UPROPERTY(EditAnywhere, Category = Behaviour)
+		class UBehaviorTree* Behaviour;
+
 	
 	//UFUNCTION()
 		//virtual void ReceiveDamage(int _DamageAmount, bool& _IsDead, int& _ScoreToAdd);
@@ -65,6 +70,12 @@ private:
 
 	UWorld* World;
 
+protected:
+
+
+
+
+	virtual bool ReceiveDamage_Implementation(float DamageAmount, AActor* DamageInstigator, FGenericTeamId DamageFromTeam) override;
 
 	//FTimerHandle DamageFlashTimerHandle;
 

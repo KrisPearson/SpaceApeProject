@@ -6,20 +6,13 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SpriteShadowComponent.h"
 #include "Components/PaperCharacterAnimationComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
+//#include "Controllers/BaseAiController.h"
 
 #include "BehaviorTree/BehaviorTree.h"
 
 AEnemyPaperCharacter::AEnemyPaperCharacter() {
 	GetCapsuleComponent()->SetCollisionProfileName("Enemy");
-
-	//ShadowComponent = CreateDefaultSubobject<USpriteShadowComponent>(TEXT("ShadowComponent"));
-
-	//AnimationComponent = CreateDefaultSubobject<UPaperCharacterAnimationComponent>(TEXT("AnimationComponent"));
-
-
-
-	//TeamOwner = TeamOwner::ETeamOwner::TO_EnemyNPC; //TEMP
-	//Cast<AAIController>(GetController())->GetGenericTeamId();
 }
 
 void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
@@ -28,8 +21,21 @@ void AEnemyPaperCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 }
 
+bool AEnemyPaperCharacter::ReceiveDamage_Implementation(float DamageAmount, AActor * DamageInstigator, FGenericTeamId DamageFromTeam) {
+
+	// TODO: Inform Controller of damage > Controller can then notify the Blackboard
+
+	return Super::ReceiveDamage_Implementation(DamageAmount, DamageInstigator, DamageFromTeam);
+}
+
+
+
+
 void AEnemyPaperCharacter::BeginPlay() {
 	Super::BeginPlay();
+
+
+	Behaviour->BlackboardAsset;
 
 	World = GetWorld();
 

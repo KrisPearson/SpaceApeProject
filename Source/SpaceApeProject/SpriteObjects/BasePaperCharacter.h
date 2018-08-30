@@ -112,6 +112,13 @@ protected:
 	UPROPERTY(Replicated)
 		FVector CurrentShootingDirection;
 
+
+	UFUNCTION(Reliable, Server, WithValidation)
+		void ServerSetShootAxisValues(int HorizontalShootValue, int VerticalShootValue);
+	bool ServerSetShootAxisValues_Validate(int HorizontalShootValue, int VerticalShootValue) { return true; };
+	void ServerSetShootAxisValues_Implementation(int HorizontalShootValue, int VerticalShootValue) { CurrentHorizontalShootValue = HorizontalShootValue; CurrentVerticalShootValue = VerticalShootValue; };
+
+
 	UFUNCTION(BlueprintCallable)
 		void ShootInDirection(FVector DirectionToShoot);
 
@@ -181,6 +188,9 @@ protected:
 
 public:
 
+	UFUNCTION(BlueprintCallable)
+		void SetShootAxisValues(int HorizontalShootValue, int VerticalShootValue);
+
 
 	void ForceMoveToLocation(FVector TargetLocation);
 
@@ -201,7 +211,7 @@ public:
 
 	virtual FVector GetObjectFaceDirection_Implementation() const override;
 
-	virtual bool RecieveDamage_Implementation(float DamageAmount, FGenericTeamId DamageFromTeam) override;
+	virtual bool ReceiveDamage_Implementation(float DamageAmount, AActor* DamageInstigator, FGenericTeamId DamageFromTeam) override;
 
 	//virtual TeamOwner::ETeamOwner GetTeamOwner_Implementation() override { return TeamOwner; }; //TODO: Remove
 
@@ -256,14 +266,6 @@ protected:
 
 		bool CheckIfAlive();
 
-
-		UFUNCTION(BlueprintCallable)
-			void PullTrigger() { bIsShooting = true; }; //TODO: Might not need to use this method. Could instead set CurrentShootDirection?
-
-
-		UFUNCTION(BlueprintCallable)
-			void ReleaseTrigger() { bIsShooting = false; };
-
 		//UFUNCTION(BlueprintCallable)
 		//	void ShootInDirection(EFaceDirection DirectionToShoot);
 
@@ -276,6 +278,10 @@ protected:
 		void ServerShootWeapon_Implementation();
 		bool ServerShootWeapon_Validate() { return true; };
 
+
+
+
+		
 
 		bool bMovementControlOverridden;
 

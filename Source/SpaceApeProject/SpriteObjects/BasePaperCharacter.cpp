@@ -121,7 +121,7 @@ void ABasePaperCharacter::BeginPlay() {
 
 	//IDamageableInterface* ObjectInterfaceTwo = Cast<IDamageableInterface>(this);
 	//if (ObjectInterfaceTwo) {
-	//	IDamageableInterface::Execute_RecieveDamage(this, 2, GetTeamOwner());
+	//	IDamageableInterface::Execute_ReceiveDamage(this, 2, GetTeamOwner());
 	//}
 
 
@@ -132,7 +132,7 @@ void ABasePaperCharacter::BeginPlay() {
 	//	IGenericTeamAgentInterface::Execute_GetGenericTeamId(this);
 	//	//ObjectInterface->GetGenericTeamId();
 
-	//	//if (IDamageableInterface::Execute_RecieveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage, (*WeaponData)->OwningTeam)) {
+	//	//if (IDamageableInterface::Execute_ReceiveDamage(OtherActor, (*WeaponData)->BaseWeaponDamage, (*WeaponData)->OwningTeam)) {
 
 	//}
 
@@ -191,12 +191,44 @@ void ABasePaperCharacter::HandleShooting() {
 
 	if (bIsShooting) {
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT(" bIsShooting = true")));
+		/*
+		if (FireForwardValue != 0 || FireRightValue != 0) {
+		const FVector FireDirection = FVector(FMath::RoundToInt(FireForwardValue), FMath::RoundToInt(FireRightValue), 0.0f); // round the values to int to counter 'analogue' input from joystick affecting magnitude
+		//Cardinal Coordinate conversion
+		const FString headings[4] = { "E", "N", "W", "S",};
+		//const FString headings[8] = { "E", "NE", "N", "NW", "W", "SW", "S", "SE" };
+		const int SizeOfHeadings = (sizeof(headings) / sizeof(*headings));
+		float angle = FMath::Atan2(FireDirection.X, FireDirection.Y);
+		int octant = FMath::RoundToInt(SizeOfHeadings * angle / (2 * PI) + SizeOfHeadings) % SizeOfHeadings;
+		Heading dir = (Heading)octant;  // typecast to enum: 0 -> E etc.
+		FString dirStr = headings[octant];
+		//UE_LOG(LogTemp, Warning, TEXT(" %f , %f , Shoot dir = %s"), FireForwardValue, FireRightValue, *dirStr);
+		ShootToHeading(dir);
+		}
+		*/
+
+		TArray<FVector> Directions{ SpriteDirection::Right, SpriteDirection::Up, SpriteDirection::Left, SpriteDirection::Down };
+
+		// round the values to int to counter 'analogue' input from joystick affecting magnitude
+		const FVector FireDirection = FVector(FMath::RoundToInt(CurrentVerticalShootValue), FMath::RoundToInt(CurrentHorizontalShootValue), 0.0f);
+		const int NumberOfDirections = 4;
+		float Angle = FMath::Atan2(FireDirection.X, FireDirection.Y);
+		int Octant = FMath::RoundToInt(NumberOfDirections * Angle / (2 * PI) + NumberOfDirections) % NumberOfDirections;
+		FVector DirectionToShoot = Directions[Octant];
+
+
+		if (Cast<AAIController>(GetController())) {
+			ServerSetCurrentShootingDirection(DirectionToShoot); // TRODO: FIGURE OUT WHY CLIENT IS FACING THE WRONG DIRECTION
+			ServerShootWeapon(/*CurrentShootingDirection*/);
+		}
+		
 
 		if (Role == ROLE_AutonomousProxy) {
+			ServerSetCurrentShootingDirection(DirectionToShoot); // TRODO: FIGURE OUT WHY CLIENT IS FACING THE WRONG DIRECTION
 			ServerShootWeapon(/*CurrentShootingDirection*/);
 		}
 		else if (Role == ROLE_Authority) {
+			//CurrentShootingDirection = DirectionToShoot; // Note: Be careful of the server overriding the client's input
 			ShootWeapon(/*CurrentShootingDirection*/); // TODO: Test whether the server player needs to call this
 		}
 	}
@@ -238,9 +270,12 @@ void ABasePaperCharacter::UpdateFaceDirection() {
 	}
 }
 
+void ABasePaperCharacter::SetShootAxisValues(int HorizontalShootValue, int VerticalShootValue) {
+	ServerSetShootAxisValues(HorizontalShootValue, VerticalShootValue); // TODO: Round to int (-1, 0, 1)
+}
+
 void ABasePaperCharacter::ShootInDirection(FVector DirectionToShoot) {
 	ServerSetCurrentShootingDirection( DirectionToShoot);
-	CurrentHorizontalShootValue = 1;
 }
 
 /* Establishes whether the character is shooting and, if so, replicates the bIsShooting property across to all players */
@@ -345,8 +380,8 @@ void ABasePaperCharacter::ForceMoveToLocation(FVector TargetLocation) {
 	TimerDuratrion += 0.1f;
 
 
-	UE_LOG(LogTemp, Warning, TEXT(" ABasePaperCharacter::ForceMoveToLocation: %f , %f"), OverrideDirection.X, OverrideDirection.Y);
-	UE_LOG(LogTemp, Warning, TEXT(" Time to move = %f "), TimerDuratrion );
+	//UE_LOG(LogTemp, Warning, TEXT(" ABasePaperCharacter::ForceMoveToLocation: %f , %f"), OverrideDirection.X, OverrideDirection.Y);
+	//UE_LOG(LogTemp, Warning, TEXT(" Time to move = %f "), TimerDuratrion );
 
 	bInputDisabled = true;
 	GetWorld()->GetTimerManager().SetTimer(MovementOverrideTimer, this, &ABasePaperCharacter::EnableCharacterInput, TimerDuratrion, false);
@@ -368,25 +403,13 @@ void ABasePaperCharacter::EnableCharacterInput() {
 }
 
 
-//void ABasePaperCharacter::DealDamage(AActor * ActorToDamage, float DamageAmount) {
-//
-//	IDamageableInterface* ObjectInterface = Cast<IDamageableInterface>(ActorToDamage);
-//
-//	if (ObjectInterface) {
-//
-//		IDamageableInterface::Execute_RecieveDamage(ActorToDamage, DamageAmount);
-//
-//	}
-//}
-
-
 #pragma region CharacterInterface Methods 
 
 
 
-bool ABasePaperCharacter::RecieveDamage_Implementation(float DamageAmount, FGenericTeamId DamageFromTeam) {
+bool ABasePaperCharacter::ReceiveDamage_Implementation(float DamageAmount, AActor* DamageInstigator, FGenericTeamId DamageFromTeam) {
 
-	UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::RecieveDamage GenericTeamId = %d"), TeamId.GetId());
+	//UE_LOG(LogTemp, Warning, TEXT("ABasePaperCharacter::ReceiveDamage GenericTeamId = %d"), TeamId.GetId());
 
 	if (DamageFromTeam != TeamId) { //TODO: Refine this system (profile predefined responses?)
 

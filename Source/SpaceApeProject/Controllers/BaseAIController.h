@@ -21,4 +21,21 @@ class SPACEAPEPROJECT_API ABaseAIController : public AAIController
 
 	void FindPawnTeamId();
 
+	//UPROPERTY(transient)
+	//	class UBehaviorTreeComponent* BehaviourComp;
+
+	//UPROPERTY(transient)
+	//	class UBlackboardComponent* BlackboardComp;
+
+	virtual void Possess(class APawn* InPawn);
+
+	void SetEnemy(class APawn* InPawn);
+
+	//UFUNCTION(BLueprintCallable, Category = Behaviour)
+	//	void SearchForEnemy();
+
+protected:
+	uint8 EnemyKeyID;
+	uint8 ENemyLocationID;
+
 };

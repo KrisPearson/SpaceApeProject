@@ -78,7 +78,7 @@ void UBaseWeaponComponent::Shoot(FVector _FireDirection) {
 
 		ABaseProjectile* Projectile = Cast<ABaseProjectile>(PlayerProjectilePoolRef->GetReusableReference());
 
-		FProjectileLaunchData LaunchData(SpawnLocation, _FireDirection, OwningCharacter->GetGenericTeamId());
+		FProjectileLaunchData LaunchData(SpawnLocation, _FireDirection, OwningCharacter, OwningCharacter->GetGenericTeamId());
 
 		if (Projectile != nullptr) {
 			CheckAndUpdateProjectile(Projectile);

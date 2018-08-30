@@ -12,13 +12,15 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyHit, AActor*, _Enemy, int, _Amount);
 
 struct FProjectileLaunchData {
-	FProjectileLaunchData(FVector _Location, FVector _Direction, FGenericTeamId _TeamId) {
+	FProjectileLaunchData(FVector _Location, FVector _Direction, AActor* _FiringActor,  FGenericTeamId _TeamId) {
 		Location = _Location;
 		Direction = _Direction;
+		FiringActor = _FiringActor,
 		TeamId = _TeamId;
 	}
 	FVector Location;
 	FVector Direction;
+	AActor* FiringActor;
 	FGenericTeamId TeamId;
 };
 
@@ -133,10 +135,12 @@ private:
 
 	UWorld* World;
 
-	// Points towards the WeaponData pointer contained in the owning PlayerCharacter object.
+	// Points towards the WeaponData pointer contained in the owning PlayerCharacter object. // TODO: Check whether this data should exist only on the WeaponComponent
 	FWeaponData** WeaponData;
 
 	FGenericTeamId OwningTeamId;
+
+	AActor* FiringActor;
 
 	inline void BroadcastHit(AActor* _HitActor, int _DamageAmount) {
 		//UE_LOG(LogTemp, Warning, TEXT("Broadcast hit"));
