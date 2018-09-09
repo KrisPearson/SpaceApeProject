@@ -90,6 +90,8 @@ public:
 
 	FTimeline DoorAnimationTimeline;
 
+	class ABaseRoom* GetOwningRoom();
+
 
 
 private:
@@ -103,7 +105,7 @@ private:
 
 	void ToggleDoor();
 
-	void FindTwinDoor();
+	bool FindTwinDoor();
 
 
 

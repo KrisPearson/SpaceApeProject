@@ -6,6 +6,13 @@
 #include "Components/SceneComponent.h"
 #include "PlayerCameraControllerComponent.generated.h"
 
+namespace SpriteDirection {
+	extern FVector Up;
+	extern FVector Down;
+	extern FVector Right;
+	extern FVector Left;
+}
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SPACEAPEPROJECT_API UPlayerCameraControllerComponent : public UActorComponent
@@ -45,7 +52,7 @@ private:
 
 	// The magnitude applied to the offset of the player camera in the facing direction
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	int OffsetMagnitude = 100;
+	int OffsetMagnitude = 150;
 
 	FVector CameraBoundsMin;
 	FVector CameraBoundsMax;

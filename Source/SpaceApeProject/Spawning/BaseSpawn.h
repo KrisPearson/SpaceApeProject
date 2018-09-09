@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/SceneComponent.h"
-#include "BaseSpawnComponent.generated.h"
+#include "GameFramework/Actor.h"
+#include "BaseSpawn.generated.h"
 
 
 UENUM(BlueprintType)		//"BlueprintType" is essential to include
@@ -15,15 +15,18 @@ enum class ESpawnBehaviour : uint8 {
 	SB_Continuous UMETA(DisplayName = "Continuous") // Continuously spawns characters until a predifined limit is met whilst the player is in the room
 };
 
+class ABasePaperCharacter;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class SPACEAPEPROJECT_API UBaseSpawnComponent : public USceneComponent
-{
+UCLASS()
+class SPACEAPEPROJECT_API ABaseSpawn : public AActor {
 	GENERATED_BODY()
 
-public:	
-	// Sets default values for this component's properties
-	UBaseSpawnComponent();
+public:
+	// Sets default values for this actor's properties
+	ABaseSpawn();
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Spawning")
+		bool IsPlayerSpawn = true;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Spawning")
 		TSubclassOf<ABasePaperCharacter> DefaultSpawnType;
@@ -36,6 +39,9 @@ public:
 		int MaxEnemyCount = 4;
 
 protected:
+
+	virtual void Tick(float DeltaTime) override;
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
@@ -49,11 +55,11 @@ protected:
 
 	// virtual void HandleVisuals(); 
 
-public:	
+public:
 	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
 		void SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeToSpawn);
 
@@ -64,23 +70,26 @@ public:
 
 
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
-	void SetSpawningDisabled(bool bIsDisabled) {
-		this->bIsDisabled = bIsDisabled; 
+		void SetSpawningDisabled(bool bIsDisabled) {
+		this->bIsDisabled = bIsDisabled;
 	};
+
+
+	void SpawnPlayerCharacter(class AController* NewPlayerController);
 
 
 
 private:
 
 	UFUNCTION()
-	void RegisterCharacterDeath(ABasePaperCharacter* DeadCharacterRef);
+		void RegisterCharacterDeath(ABasePaperCharacter* DeadCharacterRef);
 	// TODO: Bind event to enemy death. Call blueprint event too.
 
 	UFUNCTION()
-	void RegisterCharacterEnterRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
+		void RegisterCharacterEnterRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
 
 	UFUNCTION()
-	void RegisterCharacterExitRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
+		void RegisterCharacterExitRoom(ABasePaperCharacter* EnteringCharacter, int32 NumberOfPlayersInRoom);
 
 	class ABaseRoom* OwningRoom;
 };

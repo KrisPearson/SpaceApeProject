@@ -12,6 +12,8 @@
 #include "Components/CollissionDamageComponent.h"
 #include "PaperFlipbookComponent.h"
 
+#include "WorldObjects/BaseRoom.h" // TEMP (?)
+
 #include "Enums/TeamOwnerEnum.h"
 
 #include "Materials/MaterialInstance.h"
@@ -361,6 +363,8 @@ void ABasePaperCharacter::SetCurrentRoomBounds(const UBoxComponent & CameraBound
 
 /*Forcefully overrides movement input to move the character to a target location */
 void ABasePaperCharacter::ForceMoveToLocation(FVector TargetLocation) {
+
+	// TODO: Temprarily Disable collision (with otehr characters?)
 
 	FVector CurrentLocation = GetActorLocation();
 

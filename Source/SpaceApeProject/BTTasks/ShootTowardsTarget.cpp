@@ -60,7 +60,7 @@ EBTNodeResult::Type UShootTowardsTarget::AbortTask(UBehaviorTreeComponent & Owne
 	auto Character = Cast<ABasePaperCharacter>(ControlledPawn);
 
 	// Stop Shooting
-	Character->SetShootAxisValues(0, 0);
+	if (Character) Character->SetShootAxisValues(0, 0);
 
 	return EBTNodeResult::Succeeded;
 }

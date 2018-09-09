@@ -5,6 +5,7 @@
 #include "Components//StaticMeshComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/PlayerCameraControllerComponent.h"
+#include "WorldObjects/BaseRoom.h"
 
 #include "SpriteObjects/PlayerPaperCharacter.h"
 
@@ -51,6 +52,8 @@ void ABaseDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Warning, TEXT("ABaseDoor::BeginPlay") );
+
 	if (TriggerBox) {
 		TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseDoor::OnComponentEnterTrigger);
 		TriggerBox->OnComponentEndOverlap.AddDynamic(this, &ABaseDoor::OnComponentExitTrigger);
@@ -77,10 +80,18 @@ void ABaseDoor::BeginPlay()
 
 		DoorOffset = DoorMeshLeft->GetRelativeTransform().GetLocation();
 	}
+}
+ 
+ABaseRoom * ABaseDoor::GetOwningRoom() {
+	if (GetOwner()) {
+		UE_LOG(LogTemp, Warning, TEXT("ABaseDoor::GetOwningRoom. Neighbour = %s"), *(GetOwner()->GetFName().ToString()));
 
-
-
-	FindTwinDoor();
+		return Cast<ABaseRoom>(GetOwner());
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("ABaseDoor::GetOwningRoom - Owner == nullptr"));
+		return nullptr;
+	}
 }
 
 void ABaseDoor::AnimateDoor() {
@@ -99,29 +110,41 @@ void ABaseDoor::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedComponen
 
 	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
 
-		if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
+		if (FindTwinDoor()) {
+			GetOwningRoom()->GetGameraBoundsBox();
+			//Cast<ABaseRoom>(GetOwner())->AddNeighbour(this, Cast<ABaseRoom>(GetOwner()));
+			//UE_LOG(LogTemp, Warning, TEXT("AddingNeighbour - %s "), *(TwinDoor->GetFName().ToString()) );
+			//UE_LOG(LogTemp, Warning, TEXT("AddingNeighbour - %s "), *(TwinDoor->GetOwningRoom()->GetFName().ToString()));
+			GetOwningRoom()->AddNeighbour(this, TwinDoor->GetOwningRoom());
 
-			PlayerCharactersInRoom.Add(Character);
-
-			if (!bIsOpenState) ToggleDoor();
 
 
-			
 
-			//PlayerCharactersInRoom.Add(Character);
-			//OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
+			if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
 
-			//auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-			//if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
+				PlayerCharactersInRoom.Add(Character);
 
-			// Run method on Blueprint class implementation
-			//OnRunRoomEvents();
+				if (!bIsOpenState) ToggleDoor();
 
-			//Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
-		}
-		else if (ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor)) { // TODO: Could change to Enemy/ NPC?
-																						   // TODO: Store NPC character references in array?
-			//Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+
+
+
+				//PlayerCharactersInRoom.Add(Character);
+				//OnCharacterEnterDelegate.Broadcast(Cast<ABasePaperCharacter>(OtherActor), PlayerCharactersInRoom.Num());
+
+				//auto* CameraController = OtherActor->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+				//if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
+
+				// Run method on Blueprint class implementation
+				//OnRunRoomEvents();
+
+				//Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+			}
+			else if (ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor)) { // TODO: Could change to Enemy/ NPC?
+																							   // TODO: Store NPC character references in array?
+				//Character->SetCurrentRoomBounds(*GetRoomBoundsBox());
+			}
+
 		}
 	}
 }
@@ -172,14 +195,15 @@ void ABaseDoor::SetDoorState() {
 
 			CharactersToMove.Add(Char);
 		}
+		if (TwinDoor) {
+			FVector TempLoc = TwinDoor->MoveToLocation->GetComponentLocation();
 
-		FVector TempLoc = TwinDoor->MoveToLocation->GetComponentLocation();
-
-		for (APlayerPaperCharacter* Char : CharactersToMove) {
-			Char->ForceMoveToLocation(TempLoc);
-
-			auto* CameraController = Char->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
-			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*TriggerBox);
+			for (APlayerPaperCharacter* Char : CharactersToMove) {
+				Char->ForceMoveToLocation(TempLoc);
+				GetOwningRoom()->PassCharacterToNeighbour(this, Char);
+				//auto* CameraController = Char->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+				//if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*TriggerBox);
+			}
 		}
 	}
 	else {
@@ -217,7 +241,7 @@ void ABaseDoor::ToggleDoor() {
 	}
 }
 
-void ABaseDoor::FindTwinDoor() {
+bool ABaseDoor::FindTwinDoor() {
 
 	UWorld* World = GetWorld();
 	if (World != nullptr) {
@@ -251,8 +275,12 @@ void ABaseDoor::FindTwinDoor() {
 				//UE_LOG(LogTemp, Warning, TEXT("This Door Name = %s"), *(this->GetFName().ToString()));
 				//DrawDebugLine(GetWorld(), Start, End, FColor::Emerald, true, -1, 0, 10);
 				TwinDoor = OtherDoor;
-			}
-		}
 
+				return true;
+			}
+			else return false;
+		}
+		else return false;
 	}
+	else return false;
 }

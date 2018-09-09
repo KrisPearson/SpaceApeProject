@@ -27,10 +27,7 @@ void UCollissionDamageComponent::BeginPlay()
 	Super::BeginPlay();
 
 	if (Collider) Collider->OnComponentHit.AddDynamic(this, &UCollissionDamageComponent::OnHit);
-	
-	OverlapDetector->OnComponentBeginOverlap.AddDynamic(this, &UCollissionDamageComponent::OnComponentEnterTrigger);
-	OverlapDetector->OnComponentEndOverlap.AddDynamic(this, &UCollissionDamageComponent::OnComponentExitTrigger);
-
+	if (OverlapDetector) OverlapDetector->OnComponentEndOverlap.AddDynamic(this, &UCollissionDamageComponent::OnComponentExitTrigger);
 }
 
 
@@ -48,25 +45,15 @@ void UCollissionDamageComponent::OnHit(UPrimitiveComponent * HitComp, AActor * O
 	if (ObjectInterface && TeamInterface) {
 		if (!ActorsCollidedWith.Contains(OtherActor)) {
 
-
-			UE_LOG(LogTemp, Warning, TEXT(" ABasePaperCharacter::OnHit  "));
-
-
-			IDamageableInterface::Execute_ReceiveDamage(OtherActor, CollissionDamage, GetOwner(), TeamInterface->GetGenericTeamId() ); // TODO GetOwnerDamage
-
+			IDamageableInterface::Execute_ReceiveDamage(OtherActor, CollissionDamage, GetOwner(), TeamInterface->GetGenericTeamId() ); 
+			// Add the actor to array to prevent continuous damage.
 			ActorsCollidedWith.Add(OtherActor);
-
 		}
-
 	}
 }
 
-void UCollissionDamageComponent::OnComponentEnterTrigger(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) {
-	// do nothing
-}
-
 void UCollissionDamageComponent::OnComponentExitTrigger(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex) {
-	// remove the actor from array
+	// Remove the actor from array to allow subsequent collission(s) to occur
 	if (ActorsCollidedWith.Contains(OtherActor)) ActorsCollidedWith.Remove(OtherActor);
 }
 

@@ -15,8 +15,10 @@ Purpose: Handles camera events on behalf of the player character.
 #include "GameFramework/SpringArmComponent.h"
 #include "Interfaces/SpriteObjectInterface.h"
 
-const float CAMERA_ANGLE = -60.0f;
+//extern float CAMERA_ANGLE = -60.0f;
 
+
+extern float CameraAngle;
 
 // Sets default values for this component's properties
 UPlayerCameraControllerComponent::UPlayerCameraControllerComponent()
@@ -94,14 +96,17 @@ void UPlayerCameraControllerComponent::UpdateCameraBounds(float DeltaTime) {
 			FVector CameraVelocity = (GetOwner()->GetActorLocation() - CameraLocation);
 
 
-			//UE_LOG(LogTemp, Warning, TEXT("GetActorForwardVector = %f , %f , %f"), GetOwner()->GetActorForwardVector().X, GetOwner()->GetActorForwardVector().Y, GetOwner()->GetActorForwardVector().Z);
+			
 			FVector Offset;
 
 			if (GetOwner()->GetClass()->ImplementsInterface(USpriteObjectInterface::StaticClass())) {
 				Offset = ISpriteObjectInterface::Execute_GetObjectFaceDirection(GetOwner());
+				//if (Offset == SpriteDirection::Down) Offset = Offset * 2;
 			}
 
-			FVector ValueToClamp = CameraLocation + CameraVelocity + (Offset/*TODO: Get forward vector from character*/ * OffsetMagnitude) ;
+			FVector ValueToClamp = CameraLocation + CameraVelocity + (Offset * //OffsetMagnitude
+			(Offset == SpriteDirection::Down ? OffsetMagnitude * 1.2 : OffsetMagnitude)
+				) ;
 			FVector MinimumClamp = CameraBoundsMin;
 			FVector MaximumClamp = CameraBoundsMax;
 
@@ -110,6 +115,13 @@ void UPlayerCameraControllerComponent::UpdateCameraBounds(float DeltaTime) {
 				FMath::Clamp(ValueToClamp.Y, CameraBoundsMin.Y, CameraBoundsMax.Y),
 				FMath::Clamp(ValueToClamp.Z, CameraBoundsMin.Z, CameraBoundsMax.Z)
 			);
+
+			//UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMin.X = %f"), CameraBoundsMin.X  );
+			//UE_LOG(LogTemp, Warning, TEXT("CameraBoundsMax.X = %f"), CameraBoundsMax.X);
+			//UE_LOG(LogTemp, Warning, TEXT("ValueToClamp.X = %f"), ValueToClamp.X);
+			//UE_LOG(LogTemp, Warning, TEXT("TargetLocation.X = %f"), TargetLocation.X);
+
+			//FVector TargetLocation = FVector(ValueToClamp.X, ValueToClamp.Y, ValueToClamp.Z);
 
 			FVector CameraDestination = FMath::VInterpTo(CameraBoom->GetComponentLocation(), TargetLocation, DeltaTime, CameraInterpSpeed);
 

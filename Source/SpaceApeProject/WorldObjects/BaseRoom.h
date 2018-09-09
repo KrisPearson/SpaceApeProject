@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Containers/Map.h"
 #include "BaseRoom.generated.h"
 
 
+class ABaseDoor;
+class ABasePaperCharacter;
 
 
 //DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerEnter, class ABasePaperCharacter*, CharacterPointer);
@@ -25,9 +28,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-
+	/* Used to indicate to components of the Room the presence of characters*/
 	FOnCharacterEnter OnCharacterEnterDelegate;
 
+	/* Used to indicate to components of the Room the presence of characters*/
 	FOnCharacterExit OnCharacterExitDelegate;
 
 
@@ -81,9 +85,38 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Room Event")
 		void OnEndRoomEvents();
 
-	TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
+	//TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
+
+	/*Stores the character and whether the character is player controlled*/
+	TArray<TPair<ABasePaperCharacter*, bool>> CharactersInRoom;
+
+	int PlayersInRoomCount = 0;
+
+	/*Store a collection of doors and the neighbouring rooms to which they link.
+	Using this, the room has the capacity to transfer the player to the other room. */
+	TMap<ABaseDoor*, ABaseRoom*> DoorsToNeighbourRooms;
+
+
+
+	int CountPlayersInRoom() {
+		int Count = 0;
+
+		for (int i = 0; i < CharactersInRoom.Num(); i++) {
+			if ( CharactersInRoom[i].Value ) ++Count;
+		}
+		return Count;
+	}
+
 
 public:	
+
+	/* Add this rooms door and its neighbour to the Neighbours Map */
+	bool AddNeighbour(ABaseDoor* Door, ABaseRoom* Neighbour);
+
+	bool PassCharacterToNeighbour(ABaseDoor* DoorToUse, ABasePaperCharacter* CharacterToSend);
+
+	bool AddCharacterToRoomPop(ABasePaperCharacter* CharacterToAdd);
+
 
 	UBoxComponent * const GetGameraBoundsBox() const { return CameraBounds; };
 

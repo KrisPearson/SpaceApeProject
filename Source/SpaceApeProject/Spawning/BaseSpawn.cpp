@@ -1,18 +1,18 @@
 // // Copyright 2018 Kristiam Pearson. All Rights Reserved.
 
-#include "BaseSpawnComponent.h"
-#include "SpriteObjects/EnemyPaperCharacter.h"
+#include "BaseSpawn.h"
+#include "SpriteObjects/BasePaperCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "WorldObjects/BaseRoom.h"
 #include "Components/BillboardComponent.h"
+#include "GameFramework/Controller.h"
 
 
-// Sets default values for this component's properties
-UBaseSpawnComponent::UBaseSpawnComponent()
-{
+// Sets default values
+ABaseSpawn::ABaseSpawn() {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Structure to hold one-time initialization
 	// Structure to hold one-time initialization
@@ -40,31 +40,28 @@ UBaseSpawnComponent::UBaseSpawnComponent()
 	//RootComponent = SceneComponent;
 	//RootComponent->Mobility = EComponentMobility::Static;
 
-	BillboardComponent = CreateEditorOnlyDefaultSubobject<UBillboardComponent>(TEXT("SceneComp"), true);
-	BillboardComponent->Sprite = ConstructorStatics.MarkerTextureObject.Get();
-	BillboardComponent->SetupAttachment(this);
+	//BillboardComponent = CreateEditorOnlyDefaultSubobject<UBillboardComponent>(TEXT("SceneComp"), true);
+	//BillboardComponent->Sprite = ConstructorStatics.MarkerTextureObject.Get();
+	//BillboardComponent->SetupAttachment(this);
 }
 
-
-// Called when the game starts
-void UBaseSpawnComponent::BeginPlay()
-{
+// Called when the game starts or when spawned
+void ABaseSpawn::BeginPlay() {
 	Super::BeginPlay();
 	OwningRoom = Cast<ABaseRoom>(GetOwner());
 	if (OwningRoom != nullptr) {
-		OwningRoom->OnCharacterEnterDelegate.AddDynamic(this, &UBaseSpawnComponent::RegisterCharacterEnterRoom);
-		OwningRoom->OnCharacterExitDelegate.AddDynamic(this, &UBaseSpawnComponent::RegisterCharacterExitRoom);
+		OwningRoom->OnCharacterEnterDelegate.AddDynamic(this, &ABaseSpawn::RegisterCharacterEnterRoom);
+		OwningRoom->OnCharacterExitDelegate.AddDynamic(this, &ABaseSpawn::RegisterCharacterExitRoom);
 	}
 }
 
 // Called every frame
-void UBaseSpawnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+void ABaseSpawn::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
 }
 
-void UBaseSpawnComponent::HandleSpawnBehaviour(bool bEndBehaviour) {
-
+void ABaseSpawn::HandleSpawnBehaviour(bool bEndBehaviour) {
 	if (!bEndBehaviour) { // Start Spawning
 		switch (SpawnBehaviour) {
 		case ESpawnBehaviour::SB_OneTime:
@@ -100,13 +97,13 @@ void UBaseSpawnComponent::HandleSpawnBehaviour(bool bEndBehaviour) {
 }
 
 /* Performs the spawn event */
-void UBaseSpawnComponent::SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeToSpawn) {
+void ABaseSpawn::SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeToSpawn) {
 	if (!bIsDisabled) {
 
-		if (GetOwnerRole() == ROLE_Authority) {
+		if (Role == ROLE_Authority) {
 
 			ABasePaperCharacter* NewCharacter = GetWorld()->SpawnActor<ABasePaperCharacter>(TypeToSpawn,
-				this->GetComponentLocation(),
+				this->GetActorLocation(),
 				FRotator(0, 0, 0)
 				//	SpawnParams
 				);
@@ -116,8 +113,11 @@ void UBaseSpawnComponent::SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeTo
 				//InformTargetZoneOfSpawn(Action.SpawnLocationData.ZoneToSpawnIn);
 
 				// Assign a delegate, so that the SpawnComponent is informed when an enemy dies. 
-				NewCharacter->CharacterDeathDelegate.AddDynamic(this, &UBaseSpawnComponent::RegisterCharacterDeath);
+				NewCharacter->CharacterDeathDelegate.AddDynamic(this, &ABaseSpawn::RegisterCharacterDeath);
 				SpawnedCharactersArray.Add(NewCharacter); // Add the character to the array
+
+
+				Cast<ABaseRoom>(GetOwner())->AddCharacterToRoomPop(NewCharacter);
 
 			}
 		}
@@ -125,7 +125,7 @@ void UBaseSpawnComponent::SpawnCharacter(TSubclassOf<ABasePaperCharacter> TypeTo
 	}
 }
 
-void UBaseSpawnComponent::DestroySpawnedCharacters() {
+void ABaseSpawn::DestroySpawnedCharacters() {
 	for (ABasePaperCharacter* Character : SpawnedCharactersArray) {
 		Character->Destroy();
 	}
@@ -133,18 +133,38 @@ void UBaseSpawnComponent::DestroySpawnedCharacters() {
 
 #pragma region Delegate Methods
 
-void UBaseSpawnComponent::RegisterCharacterDeath(ABasePaperCharacter* DeadCharacterRef) {
+void ABaseSpawn::SpawnPlayerCharacter(AController * NewPlayerController) {
+	if (Role == ROLE_Authority) {
+
+		if (NewPlayerController) {
+
+
+
+			// Assign a delegate, so that the SpawnComponent is informed when an enemy dies. 
+			//NewCharacter->CharacterDeathDelegate.AddDynamic(this, &ABaseSpawn::RegisterCharacterDeath);
+			//SpawnedCharactersArray.Add(NewCharacter); // Add the character to the array
+
+
+			ABasePaperCharacter* PlayerCharacter = Cast<ABasePaperCharacter>(NewPlayerController->GetPawn());
+			if (PlayerCharacter) Cast<ABaseRoom>(GetOwner())->AddCharacterToRoomPop(PlayerCharacter);
+
+		}
+	}
+	else UE_LOG(LogTemp, Warning, TEXT("Role not authority"));
+}
+
+void ABaseSpawn::RegisterCharacterDeath(ABasePaperCharacter* DeadCharacterRef) {
 	SpawnedCharactersArray.Remove(DeadCharacterRef);
 
 }
 
-void UBaseSpawnComponent::RegisterCharacterEnterRoom(ABasePaperCharacter * EnteringCharacter, int32 NumberOfPlayersInRoom) {
+void ABaseSpawn::RegisterCharacterEnterRoom(ABasePaperCharacter * EnteringCharacter, int32 NumberOfPlayersInRoom) {
 	if (NumberOfPlayersInRoom > 0) {
-		HandleSpawnBehaviour(false);                
+		HandleSpawnBehaviour(false);
 	}
 }
 
-void UBaseSpawnComponent::RegisterCharacterExitRoom(ABasePaperCharacter * EnteringCharacter, int32 NumberOfPlayersInRoom) {
+void ABaseSpawn::RegisterCharacterExitRoom(ABasePaperCharacter * EnteringCharacter, int32 NumberOfPlayersInRoom) {
 	if (NumberOfPlayersInRoom == 0) {
 		HandleSpawnBehaviour(true);
 	}

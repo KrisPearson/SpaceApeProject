@@ -157,23 +157,7 @@ protected:
 	void MulticastSetIsShooting(bool NewValue);
 	void MulticastSetIsShooting_Implementation(bool NewValue) { bIsShooting = NewValue;  };
 
-
-	//UFUNCTION(Server, Reliable, WithValidation)
-	//	void ServerModifyMoveDirection(ABasePaperCharacter* TargetedActor, FVector NewValue);
-	//virtual bool ServerModifyMoveDirection_Validate(ABasePaperCharacter* TargetedActor, FVector NewValue) { return true; };
-	//virtual void ServerModifyMoveDirection_Implementation(ABasePaperCharacter* TargetedActor, FVector NewValue) { TargetedActor->CurrentMovingDirection = NewValue; };
-
-	//FVector LastUpdatedMovingDirection;
-
-	//UFUNCTION(Server, Reliable, WithValidation)
-	//	void ServerModifyIsShooting(ABasePaperCharacter* TargetedActor, bool NewValue);
-	//virtual bool ServerModifyIsShooting_Validate(ABasePaperCharacter* TargetedActor, bool NewValue) { return true; };
-	//virtual void ServerModifyIsShooting_Implementation(ABasePaperCharacter* TargetedActor, bool NewValue) { TargetedActor->bIsShooting = NewValue; };
-
-
 	FVector FaceDirectionVector;
-
-
 
 	// Used to reinstate movement input following override
 	FTimerHandle MovementOverrideTimer;
@@ -188,6 +172,10 @@ protected:
 
 public:
 
+	const class ABaseRoom* GetCurrentRoom() { return CurrentRoom;  }
+
+	void SetCurrentRoom(class ABaseRoom* NewRoom) { CurrentRoom = NewRoom; }
+
 	UFUNCTION(BlueprintCallable)
 		void SetShootAxisValues(int HorizontalShootValue, int VerticalShootValue);
 
@@ -201,19 +189,11 @@ public:
 
 	inline FVector GetCurrentShootingDirection() { return CurrentShootingDirection; }
 
-	//inline EFaceDirection GetCurrentMovingDirection() { return CurrentMovingDirection; }
-
-
-	//UFUNCTION()
-	//virtual void DealDamage(class AActor* ActorToDamage, int DamageAmount); // NowHandled by IDamageableInterface
-
 #pragma region Interface Methods 
 
 	virtual FVector GetObjectFaceDirection_Implementation() const override;
 
 	virtual bool ReceiveDamage_Implementation(float DamageAmount, AActor* DamageInstigator, FGenericTeamId DamageFromTeam) override;
-
-	//virtual TeamOwner::ETeamOwner GetTeamOwner_Implementation() override { return TeamOwner; }; //TODO: Remove
 
 	/** Assigns Team Agent to given TeamID */
 	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
@@ -244,9 +224,6 @@ protected:
 
 	//TeamOwner::ETeamOwner TeamOwner;
 
-
-
-
 	TPair<FVector, FVector> MinMaxRoomBounds;
 
 	FVector MinRoomBounds;
@@ -270,6 +247,8 @@ protected:
 		//	void ShootInDirection(EFaceDirection DirectionToShoot);
 
 	private:
+
+		class ABaseRoom* CurrentRoom;
 
 		void ShootWeapon();
 

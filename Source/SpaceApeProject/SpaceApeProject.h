@@ -12,4 +12,4 @@ namespace SpriteDirection {
 	extern FVector Left = FVector(0, -1, 0);
 }
 
-extern float CameraAngle = -60.0f;
+extern float CameraAngle = -90.0f;
