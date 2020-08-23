@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 /**
 BaseRoom.cpp
@@ -51,8 +50,6 @@ ABaseRoom::ABaseRoom() {
 void ABaseRoom::BeginPlay() {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Warning, TEXT("ABaseRoom::BeginPlay"));
-
 	// Get the dimensions of the room mesh and use it to 
 	//define the trigger box and camera bounds for the room
 	FVector RoomDimensions = RoomMesh->GetStaticMesh()->GetBounds().GetBox().GetSize();
@@ -64,13 +61,23 @@ void ABaseRoom::BeginPlay() {
 	GetAllChildActors(Children, false);
 	for (AActor* Child : Children) { Child->SetOwner(this); }
 
-
+	UpdateBoundsForRoomPop(); // Update bounds following box initialisation
 }
 
 
 // Called every frame
 void ABaseRoom::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+}
+
+void ABaseRoom::UpdateBoundsForRoomPop() {
+	for (TPair<ABasePaperCharacter*, bool> Char : CharactersInRoom) {
+		if (Char.Value) {
+			auto* CameraController = Char.Key->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
+			if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
+		}
+		Char.Key->SetCurrentRoomBounds(*GetRoomBoundsBox());
+	}
 }
 
 /*The intended use of this method is to detect the player character entering the room, at which point the room will initiate its event sequence. */
@@ -81,10 +88,13 @@ void ABaseRoom::OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent, A
 
 	if (OtherActor->IsA(ABasePaperCharacter::StaticClass())) {
 
+		// Handles the first time a player enters a room
 		ABasePaperCharacter* Character = Cast<ABasePaperCharacter>(OtherActor);
 		if (Character->GetCurrentRoom() == nullptr) {
 			AddCharacterToRoomPop(Character);
+			UE_LOG(LogTemp, Warning, TEXT("Character->GetCurrentRoom() == nullptr is true"));
 		}
+		else 	UE_LOG(LogTemp, Warning, TEXT("Character->GetCurrentRoom() == nullptr is false"));
 
 	//	if (APlayerPaperCharacter* Character = Cast<APlayerPaperCharacter>(OtherActor)) {
 
@@ -143,10 +153,9 @@ bool ABaseRoom::AddNeighbour( ABaseDoor* Door,  ABaseRoom * Neighbour) {
 }
 
 
-bool ABaseRoom::PassCharacterToNeighbour(ABaseDoor * DoorToUse, ABasePaperCharacter* CharacterToSend) {
+bool ABaseRoom::PassCharacterToNeighbour(ABaseDoor * DoorToUse, ABasePaperCharacter* CharacterToSend, FVector LocationToMoveTo) {
 	if (DoorsToNeighbourRooms.Num() > 0) {
 		ABaseRoom* Neighbour = DoorsToNeighbourRooms[DoorToUse];
-
 
 		if (Neighbour) {
 			if (Neighbour->AddCharacterToRoomPop(CharacterToSend)) {
@@ -157,11 +166,8 @@ bool ABaseRoom::PassCharacterToNeighbour(ABaseDoor * DoorToUse, ABasePaperCharac
 
 				CharactersInRoom.Remove(NewPair);
 
-				// Run method on Blueprint class implementation
-				OnRunRoomEvents();
-
 				OnCharacterExitDelegate.Broadcast(Cast<ABasePaperCharacter>(CharacterToSend), PlayersInRoomCount);
-
+				CharacterToSend->ForceMoveToLocation(LocationToMoveTo);
 
 				// Decrease the player Count
 				if (NewPair.Value) --PlayersInRoomCount;
@@ -174,6 +180,10 @@ bool ABaseRoom::PassCharacterToNeighbour(ABaseDoor * DoorToUse, ABasePaperCharac
 
 bool ABaseRoom::AddCharacterToRoomPop(ABasePaperCharacter * CharacterToAdd) { 
 	UE_LOG(LogTemp, Warning, TEXT("ABaseRoom::AddCharacterToRoomPop"));
+
+	// Run method on Blueprint class implementation
+	if (PlayersInRoomCount == 0) OnRunRoomEvents();
+	
 		TPair<class ABasePaperCharacter*, bool> NewPair;
 		NewPair.Key = CharacterToAdd;
 		NewPair.Value = CharacterToAdd->IsA(APlayerPaperCharacter::StaticClass());
@@ -182,7 +192,6 @@ bool ABaseRoom::AddCharacterToRoomPop(ABasePaperCharacter * CharacterToAdd) {
 
 		auto* CameraController = CharacterToAdd->GetComponentByClass(UPlayerCameraControllerComponent::StaticClass());
 		if (CameraController) Cast<UPlayerCameraControllerComponent>(CameraController)->SetCameraBounds(*GetGameraBoundsBox());
-
 
 		CharacterToAdd->SetCurrentRoom(this);
 

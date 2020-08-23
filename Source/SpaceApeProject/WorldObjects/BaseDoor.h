@@ -1,4 +1,4 @@
-// // Copyright 2018 Kristiam Pearson. All Rights Reserved.
+// // Copyright 2018 Kristian Pearson. All Rights Reserved.
 
 #pragma once
 
@@ -92,6 +92,7 @@ public:
 
 	class ABaseRoom* GetOwningRoom();
 
+	void AddCharacterToIncomingCharacters(class ABasePaperCharacter* IncomingCharacter);
 
 
 private:
@@ -109,7 +110,8 @@ private:
 
 
 
-	TArray<class APlayerPaperCharacter*> PlayerCharactersInRoom;
+	TArray<class ABasePaperCharacter*> OutgoingCharacters;
+	TArray<class ABasePaperCharacter*> IncomingCharacters;
 
 
 	float TimelineValue;
@@ -119,6 +121,8 @@ private:
 	bool bIsOpenState = false;
 
 	bool bIsLocked = false;
+
+
 
 
 };

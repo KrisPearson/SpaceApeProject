@@ -197,6 +197,7 @@ AActor * ASurvivalGameMode::ChoosePlayerStart_Implementation(AController * Playe
 	if (FoundPlayerSpawns.Num() > 0) {
 		UE_LOG(LogTemp, Warning, TEXT("FoundPlayerSpawns count = %d"), FoundPlayerSpawns.Num());
 		BestStart = FoundPlayerSpawns[0];
+		//BestStart = FoundPlayerSpawns[FMath::FRandRange(0, FoundPlayerSpawns.Max() - 1)];
 	}
 
 	if (!BestStart) {

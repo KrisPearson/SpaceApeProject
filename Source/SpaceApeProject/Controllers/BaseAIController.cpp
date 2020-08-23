@@ -1,4 +1,4 @@
-// // Copyright 2018 Kristiam Pearson. All Rights Reserved.
+// // Copyright 2018 Kristian Pearson. All Rights Reserved.
 
 #include "BaseAIController.h"
 #include "SpriteObjects/EnemyPaperCharacter.h"

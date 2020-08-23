@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -60,6 +59,8 @@ protected:
 		//class Material* TileSet;
 
 
+	void UpdateBoundsForRoomPop();
+
 
 	UFUNCTION()
 	void OnComponentEnterRoom(UPrimitiveComponent* OverlappedComponent,
@@ -113,7 +114,7 @@ public:
 	/* Add this rooms door and its neighbour to the Neighbours Map */
 	bool AddNeighbour(ABaseDoor* Door, ABaseRoom* Neighbour);
 
-	bool PassCharacterToNeighbour(ABaseDoor* DoorToUse, ABasePaperCharacter* CharacterToSend);
+	bool PassCharacterToNeighbour(ABaseDoor* DoorToUse, ABasePaperCharacter* CharacterToSend, FVector LocationToMoveTo);
 
 	bool AddCharacterToRoomPop(ABasePaperCharacter* CharacterToAdd);
 
